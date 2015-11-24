@@ -25,5 +25,9 @@
   "bugs": {
     "url": "https://github.com/ariutta/rx-node-extra/issues"
   },
-  "homepage": "https://github.com/ariutta/rx-node-extra#readme"
+  "homepage": "https://github.com/ariutta/rx-node-extra#readme",
+  "dependencies": {
+    "rx": "^4.0.7",
+    "rx-node": "^1.0.1"
+  }
 }
