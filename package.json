@@ -1,0 +1,29 @@
+{
+  "name": "rx-node-extra",
+  "version": "1.0.0-alpha.0",
+  "description": "rx-node-extra contains additional functionality not contained in the rx-node package, such as RxNode.fromUnpausableStream.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/ariutta/rx-node-extra.git"
+  },
+  "keywords": [
+    "rx",
+    "rxjs",
+    "node",
+    "rx-node",
+    "rxnode",
+    "fromstream",
+    "stream",
+    "observable"
+  ],
+  "author": "Anders Riutta",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ariutta/rx-node-extra/issues"
+  },
+  "homepage": "https://github.com/ariutta/rx-node-extra#readme"
+}
