@@ -1,3 +1,3 @@
-# rx-node-extra
+# rx-extra
 
-`rx-node-extra` contains additional functionality not contained in the rx-node package, such as `fromUnpausableStream`.
+`rx-extra` contains additional functionality not contained in the rx package, such as `splitOnChange`.
