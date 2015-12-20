@@ -1,5 +1,6 @@
-var _ = require('lodash');
 var Rx = require('rx');
+// Note: the following two are just included in the node build,
+// not the browser build
 var RxNode = require('rx-node');
 var stream = require('stream');
 
@@ -149,7 +150,8 @@ function wrapMethod(originalMethod, isArray) {
 
 // TODO check whether this actually works. Haven't tested it yet.
 Rx.panWrap = function(mod, methodDetails) {
-  var methodNamesToWrap = _.keys(methodDetails);
+  // TODO make sure we should be using the method below, not Object.keys()
+  var methodNamesToWrap = Object.getOwnPropertyNames(methodDetails);
   var streamsSupported = !!RxNode && !!stream;
   methodNamesToWrap.forEach(function(methodName) {
     var originalMethod = mod[methodName];
