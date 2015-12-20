@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/ariutta/rx-extra#readme",
   "dependencies": {
-    "rx": "^4.0.7"
+    "rx": "^4.0.7",
+    "rx-node": "^1.0.1"
   }
 }
