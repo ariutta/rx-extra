@@ -1,4 +1,7 @@
 var Rx = require('rx');
+
+Rx.config.longStackSupport = true;
+
 // Note: the following two are just included in the node build,
 // not the browser build
 var RxNode = require('rx-node');
