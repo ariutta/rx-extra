@@ -34,7 +34,9 @@ function splitOnChange(source, keySelector) {
     throw err;
   },
   function() {
-    subject.onNext(currentGroup);
+    if (currentGroup.length > 0) {
+      subject.onNext(currentGroup);
+    }
     subject.onCompleted();
   });
 

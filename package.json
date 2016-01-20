@@ -1,6 +1,6 @@
 {
   "name": "rx-extra",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "rx-extra contains additional functionality not contained in the rx package, such as \"splitOnChange\".",
   "main": "index.js",
   "scripts": {
@@ -28,5 +28,23 @@
   "dependencies": {
     "rx": "^4.0.7",
     "rx-node": "^1.0.1"
+  },
+  "semverBumper": {
+    "jsonFiles": [
+      {
+        "filepath": "package.json",
+        "key": "version"
+      }
+    ],
+    "grepOptions": {
+      "include": [],
+      "exclude": [],
+      "excludeDir": [
+        "./docs",
+        "./test",
+        "./bower_components",
+        "./lib"
+      ]
+    }
   }
 }
