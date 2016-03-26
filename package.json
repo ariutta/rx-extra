@@ -4,7 +4,7 @@
   "description": "rx-extra contains additional functionality not contained in the rx package, such as \"splitOnChange\".",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha test/spec/api.js"
   },
   "browser": {
     "rx-node": false,
@@ -28,6 +28,12 @@
   "dependencies": {
     "rx": "^4.0.7",
     "rx-node": "^1.0.1"
+  },
+  "devDependencies": {
+    "chai": "^3.4.1",
+    "loggin": "^3.0.1",
+    "mocha": "^2.3.4",
+    "sinon": "^1.17.2"
   },
   "semverBumper": {
     "jsonFiles": [
