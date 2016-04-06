@@ -14,8 +14,223 @@ var sologger = require('../sologger.js');
 // Run tests
 describe('Public API', function() {
 
-  it('should convert unpausable stream to Observable', function(done) {
-    done(new Error('add test for .fromUnpauseableStream'));
+  describe('hierarchicalPartition', function() {
+    it('should work as Rx.Observable...', function(done) {
+      var source = Rx.Observable.range(1, 20);
+
+      var evenOddPartition = Rx.Observable.hierarchicalPartition(
+          function(value) {
+            return value % 2 === 0;
+          },
+          source
+      );
+
+      var evenSource = evenOddPartition[0];
+      var oddSource = evenOddPartition[1];
+
+      var isIsNotMultipleSixPartition = Rx.Observable.hierarchicalPartition(
+          function(value) {
+            return value % 3 === 0;
+          },
+          evenSource,
+          oddSource
+      );
+      var multipleSixSource = isIsNotMultipleSixPartition[0];
+      var notMultipleSixSource = isIsNotMultipleSixPartition[1];
+
+      multipleSixSource
+      .toArray()
+      .doOnNext(function(actual) {
+        var expected = [
+          6,
+          12,
+          18
+        ];
+        expect(actual).to.eql(expected);
+      })
+      .concat(
+        notMultipleSixSource
+        .toArray()
+        .doOnNext(function(actual) {
+          var expected = [
+            1,
+            2,
+            3,
+            4,
+            5,
+            7,
+            8,
+            9,
+            10,
+            11,
+            13,
+            14,
+            15,
+            16,
+            17,
+            19,
+            20
+          ];
+          expect(actual).to.eql(expected);
+        })
+      )
+      .doOnError(done)
+      .subscribeOnCompleted(done);
+    });
+
+    it('should replay', function(done) {
+
+      var fastDelay = 200;
+      var slowDelay = 500;
+
+      var source = Rx.Observable.from([{
+        rating: 4,
+        color: 'green'
+      }, {
+        rating: 4,
+        color: 'red'
+      }, {
+        rating: 2,
+        color: 'yellow'
+      }, {
+        rating: 3,
+        color: 'red'
+      }, {
+        rating: 5,
+        color: 'green'
+      }, {
+        rating: 4,
+        color: 'yellow'
+      }, {
+        rating: 4,
+        color: 'red'
+      }])
+      .delay(fastDelay);
+
+      var rated4PlusPartition = Rx.Observable.hierarchicalPartition(
+          function(item) {
+            return item.rating >= 4;
+          },
+          source
+      );
+      var rated4PlusSource = rated4PlusPartition[0];
+      var ratedUnder4Source = rated4PlusPartition[1]
+      .delay(fastDelay);
+
+      var redRated4PlusPartition = Rx.Observable.hierarchicalPartition(
+          function(item) {
+            return item.color === 'red';
+          },
+          rated4PlusSource,
+          ratedUnder4Source
+      );
+
+      var redRated4PlusSource = redRated4PlusPartition[0];
+      var notRedOrRatedUnder4Source = redRated4PlusPartition[1];
+
+      setTimeout(function() {
+        rated4PlusPartition.replay();
+      }, slowDelay);
+
+      redRated4PlusSource
+      .toArray()
+      .doOnNext(function(actual) {
+        var expected = [{
+          rating: 4,
+          color: 'red'
+        }, {
+          rating: 4,
+          color: 'red'
+        }];
+
+        expect(actual).to.eql(expected);
+      })
+      .concat(
+        notRedOrRatedUnder4Source
+        .toArray()
+        .doOnNext(function(actual) {
+          var expected = [{
+            rating: 4,
+            color: 'green'
+          }, {
+            rating: 5,
+            color: 'green'
+          }, {
+            rating: 4,
+            color: 'yellow'
+          }, {
+            rating: 2,
+            color: 'yellow'
+          }, {
+            rating: 3,
+            color: 'red'
+          }];
+          expect(actual).to.eql(expected);
+        })
+      )
+      .doOnError(done)
+      .subscribeOnCompleted(done);
+    });
+
+    it('should work as prototype', function(done) {
+      var evenOddPartition = Rx.Observable.range(1, 20)
+      .hierarchicalPartition(function(value) {
+        return value % 2 === 0;
+      });
+
+      var isIsNotMultipleSixPartition = Rx.Observable.hierarchicalPartition(
+          function(value) {
+            return value % 3 === 0;
+          },
+          evenOddPartition[0], // evenSource
+          evenOddPartition[1] // oddSource
+      );
+      var multipleSixSource = isIsNotMultipleSixPartition[0];
+      var notMultipleSixSource = isIsNotMultipleSixPartition[1];
+
+      multipleSixSource
+      .takeUntil(Rx.Observable.timer(5))
+      .toArray()
+      .doOnNext(function(actual) {
+        var expected = [
+          6,
+          12,
+          18
+        ];
+        expect(actual).to.eql(expected);
+      })
+      .concat(
+        notMultipleSixSource
+        .takeUntil(Rx.Observable.timer(5))
+        .toArray()
+        .doOnNext(function(actual) {
+          var expected = [
+            1,
+            2,
+            3,
+            4,
+            5,
+            7,
+            8,
+            9,
+            10,
+            11,
+            13,
+            14,
+            15,
+            16,
+            17,
+            19,
+            20
+          ];
+          expect(actual).to.eql(expected);
+        })
+      )
+      .doOnError(done)
+      .subscribeOnCompleted(done);
+
+    });
+
   });
 
   describe('thenable (Promise)', function() {
@@ -561,6 +776,10 @@ describe('Public API', function() {
 
       });
     });
+  });
+
+  it('should convert unpausable stream to Observable', function(done) {
+    done(new Error('Have not added a test for ...fromUnpauseableStream'));
   });
 
 });
