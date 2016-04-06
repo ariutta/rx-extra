@@ -782,4 +782,8 @@ describe('Public API', function() {
     done(new Error('Have not added a test for ...fromUnpauseableStream'));
   });
 
+  it('should pan wrap', function(done) {
+    done(new Error('Have not added a test for ...panWrap'));
+  });
+
 });
