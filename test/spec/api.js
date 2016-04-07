@@ -6,7 +6,6 @@ var expect = require('chai').expect;
 var JSONStream = require('jsonstream');
 var Rx = require('../../index.js');
 var RxFs = require('rx-fs');
-//var RxNode = require('../../index.js');
 var sinon = require('sinon');
 var sologger = require('../sologger.js');
 
