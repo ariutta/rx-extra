@@ -7,8 +7,7 @@
     "test": "mocha test/spec/api.js"
   },
   "browser": {
-    "rx-node": false,
-    "stream": false
+    "rx-node": false
   },
   "repository": {
     "type": "git",
@@ -31,8 +30,10 @@
   },
   "devDependencies": {
     "chai": "^3.4.1",
+    "jsonstream": "^1.0.3",
     "loggin": "^3.0.1",
     "mocha": "^2.3.4",
+    "rx-fs": "^1.0.0-alpha.2",
     "sinon": "^1.17.2"
   },
   "semverBumper": {

@@ -2,9 +2,10 @@
  * Test public APIs
  */
 
-//var _ = require('lodash');
 var expect = require('chai').expect;
+var JSONStream = require('jsonstream');
 var Rx = require('../../index.js');
+var RxFs = require('rx-fs');
 //var RxNode = require('../../index.js');
 var sinon = require('sinon');
 var sologger = require('../sologger.js');
@@ -776,6 +777,14 @@ describe('Public API', function() {
 
       });
     });
+  });
+
+  it('should run Rx.Observable.prototype.streamThrough', function(done) {
+    RxFs.createReadObservable(__dirname + '/../../package.json', 'utf8')
+    .streamThrough(JSONStream.parse('name'))
+    .subscribe(function(actual) {
+      expect(actual).to.equal('rx-extra');
+    }, done, done);
   });
 
   it('should convert unpausable stream to Observable', function(done) {
