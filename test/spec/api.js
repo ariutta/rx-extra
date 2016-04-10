@@ -2,22 +2,27 @@
  * Test public APIs
  */
 
+var _ = require('lodash');
 var expect = require('chai').expect;
 var JSONStream = require('jsonstream');
-//var Rx = require('../../index.js');
-//var Rx = require('@rxjs/rx/rx.lite.js');
-var Rx = require('@rxjs/rx/dist/rx.all.js');
-//Rx.Observable.addToObject({
-//  //delay: require('@rxjs/rx/observable/delay.js'),
-//  //doOnNext: require('@rxjs/rx/observable/tap.js'),
-//  //from: require('@rxjs/rx/observable/from.js'),
-//  nestedPartition: require('../../lib/nestedPartition.js'),
-//});
+var Rx = {};
+Rx.Observable = require('@rxjs/rx/observable');
+Rx.Observable.addToObject({
+  from: require('@rxjs/rx/observable/from.js'),
+  partitionNested: require('../../lib/partition-nested.js'),
+  range: require('@rxjs/rx/observable/range.js'),
+  timer: require('@rxjs/rx/observable/timer.js'),
+});
 Rx.Observable.addToPrototype({
-  //delay: require('@rxjs/rx/observable/delay.js'),
-  //doOnNext: require('@rxjs/rx/observable/tap.js'),
-  //from: require('@rxjs/rx/observable/from.js'),
-  nestedPartition: require('../../lib/nestedPartition.js'),
+  delay: require('@rxjs/rx/observable/delay.js'),
+  concat: require('@rxjs/rx/observable/concat.js'),
+  map: require('@rxjs/rx/observable/map.js'),
+  multicast: require('@rxjs/rx/observable/multicast.js'),
+  partition: require('@rxjs/rx/observable/partition.js'),
+  partitionNested: require('../../lib/partition-nested.js'),
+  takeUntil: require('@rxjs/rx/observable/takeuntil.js'),
+  tap: require('@rxjs/rx/observable/tap.js'),
+  toArray: require('@rxjs/rx/observable/toArray.js'),
 });
 //var RxNode = Rx.RxNode;
 var RxFs = require('rx-fs');
@@ -29,254 +34,308 @@ var sologger = require('../sologger.js');
 // Run tests
 describe('Public API', function() {
 
-  describe('nestedPartition', function() {
-//    it('should work as Rx.Observable...', function(done) {
-//      var source = Rx.Observable.range(1, 20);
-//
-//      var evenPartition = Rx.Observable.nestedPartition(
-//          function(value) {
-//            return value % 2 === 0;
-//          },
-//          source
-//      );
-//
-//      var evenSource = evenPartition[0];
-//      var oddSource = evenPartition[1];
-//
-//      var multipleOfSixPartition = Rx.Observable.nestedPartition(
-//          function(value) {
-//            return value % 3 === 0;
-//          },
-//          evenSource,
-//          oddSource
-//      );
-//      var multipleOfSixSource = multipleOfSixPartition[0];
-//      var notMultipleOfSixSource = multipleOfSixPartition[1];
-//
-//      multipleOfSixSource
-//      .toArray()
-//      .doOnNext(function(actual) {
-//        var expected = [
-//          6,
-//          12,
-//          18
-//        ];
-//        expect(actual).to.eql(expected);
-//      })
-//      .concat(
-//        notMultipleOfSixSource
-//        .toArray()
-//        .doOnNext(function(actual) {
-//          var expected = [
-//            1,
-//            2,
-//            3,
-//            4,
-//            5,
-//            7,
-//            8,
-//            9,
-//            10,
-//            11,
-//            13,
-//            14,
-//            15,
-//            16,
-//            17,
-//            19,
-//            20
-//          ];
-//          expect(actual).to.eql(expected);
-//        })
-//      )
-//      .doOnError(done)
-//      .subscribeOnCompleted(done);
-//    });
+  describe('partitionNested', function() {
+    // TODO changed API:
+    // 1) pass in either a partition or a source,
+    //    but not a separate param for each source
+    // 2) no explicit replay method. it's automatic.
 
-//    it('should replay', function(done) {
-//
-//      var fastDelay = 200;
-//      var slowDelay = 500;
-//
-//      var source = Rx.Observable.from([{
-//        rating: 4,
-//        color: 'green'
-//      }, {
-//        rating: 4,
-//        color: 'red'
-//      }, {
-//        rating: 2,
-//        color: 'yellow'
-//      }, {
-//        rating: 3,
-//        color: 'red'
-//      }, {
-//        rating: 5,
-//        color: 'green'
-//      }, {
-//        rating: 4,
-//        color: 'yellow'
-//      }, {
-//        rating: 4,
-//        color: 'red'
-//      }])
-//      .delay(fastDelay);
-//
-//      var rated4PlusPartition = Rx.Observable.nestedPartition(
-//          function(item) {
-//            return item.rating >= 4;
-//          },
-//          source
-//      );
-//      var rated4PlusSource = rated4PlusPartition[0];
-//      var ratedUnder4Source = rated4PlusPartition[1]
-//      .delay(fastDelay);
-//
-//      var redRated4PlusPartition = Rx.Observable.nestedPartition(
-//          function(item) {
-//            return item.color === 'red';
-//          },
-//          rated4PlusSource,
-//          ratedUnder4Source
-//      );
-//
-//      var redRated4PlusSource = redRated4PlusPartition[0];
-//      var notRedOrRatedUnder4Source = redRated4PlusPartition[1];
-//
-//      setTimeout(function() {
-//        rated4PlusPartition.replay();
-//      }, slowDelay);
-//
-//      redRated4PlusSource
-//      .toArray()
-//      .doOnNext(function(actual) {
-//        var expected = [{
-//          rating: 4,
-//          color: 'red'
-//        }, {
-//          rating: 4,
-//          color: 'red'
-//        }];
-//
-//        expect(actual).to.eql(expected);
-//      })
-//      .concat(
-//        notRedOrRatedUnder4Source
-//        .toArray()
-//        .doOnNext(function(actual) {
-//          var expected = [{
-//            rating: 4,
-//            color: 'green'
-//          }, {
-//            rating: 5,
-//            color: 'green'
-//          }, {
-//            rating: 4,
-//            color: 'yellow'
-//          }, {
-//            rating: 2,
-//            color: 'yellow'
-//          }, {
-//            rating: 3,
-//            color: 'red'
-//          }];
-//          expect(actual).to.eql(expected);
-//        })
-//      )
-//      .doOnError(done)
-//      .subscribeOnCompleted(done);
-//    });
-
-    it('should work as prototype (once)', function(done) {
+    it('should run as prototype with source', function(done) {
       var evenPartition = Rx.Observable.range(1, 20)
-      .nestedPartition(function(value) {
+      .partitionNested(function(value) {
         return value % 2 === 0;
       });
 
       var evenSource = evenPartition[0];
-      console.log('evenSource');
-      console.log(evenSource);
-      var oddSource = evenPartition[1];
-      console.log('oddSource');
-      console.log(oddSource);
 
       evenSource
-      //.doOnError(done)
-      //.subscribeOnCompleted(done);
-      .subscribe(function(value) {
-        console.log('even: ' + value);
-      }, done);
+      .toArray()
+      .tap(function(actual) {
+        var expected = [
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20
+        ];
+        expect(actual).to.eql(expected);
+      }, done)
+      .subscribeOnCompleted(done);
+    });
 
-      oddSource
-      //.doOnError(done)
-      //.subscribeOnCompleted(done);
-      .subscribe(function(value) {
-        console.log('odd: ' + value);
-      }, done, done);
+    it('should run as Class with partition', function(done) {
+      var evenPartition = Rx.Observable.range(1, 20)
+      .partition(function(value) {
+        return value % 2 === 0;
+      });
+
+      var multipleOfSixPartition = Rx.Observable.partitionNested(
+          evenPartition,
+          function(value) {
+            return value % 3 === 0;
+          }
+      );
+      var multipleOfSixSource = multipleOfSixPartition[0];
+      var notMultipleOfSixSource = multipleOfSixPartition[1];
+
+      multipleOfSixSource
+      .toArray()
+      .tap(function(actual) {
+        var expected = [
+          6,
+          12,
+          18
+        ];
+        expect(actual).to.eql(expected);
+      })
+      .concat(
+        notMultipleOfSixSource
+        .toArray()
+        .tap(function(actual) {
+          var expected = [
+            1,
+            2,
+            3,
+            4,
+            5,
+            7,
+            8,
+            9,
+            10,
+            11,
+            13,
+            14,
+            15,
+            16,
+            17,
+            19,
+            20
+          ];
+          expect(actual).to.eql(expected);
+        })
+      )
+      .tap(null, done)
+      .subscribeOnCompleted(done);
+    });
+
+    it('should run as Class with source then Class with partition', function(done) {
+      var source = Rx.Observable.range(1, 20);
+
+      var evenPartition = Rx.Observable.partitionNested(
+          source,
+          function(value) {
+            return value % 2 === 0;
+          }
+      );
+
+      var multipleOfSixPartition = Rx.Observable.partitionNested(
+          evenPartition,
+          function(value) {
+            return value % 3 === 0;
+          }
+      );
+      var multipleOfSixSource = multipleOfSixPartition[0];
+      var notMultipleOfSixSource = multipleOfSixPartition[1];
+
+      multipleOfSixSource
+      .toArray()
+      .tap(function(actual) {
+        var expected = [
+          6,
+          12,
+          18
+        ];
+        expect(actual).to.eql(expected);
+      })
+      .concat(
+        notMultipleOfSixSource
+        .toArray()
+        .tap(function(actual) {
+          var expected = [
+            1,
+            2,
+            3,
+            4,
+            5,
+            7,
+            8,
+            9,
+            10,
+            11,
+            13,
+            14,
+            15,
+            16,
+            17,
+            19,
+            20
+          ];
+          expect(actual).to.eql(expected);
+        })
+      )
+      .tap(null, done)
+      .subscribeOnCompleted(done);
+    });
+
+    it('should run as prototype with source then prototype with partition', function(done) {
+      var evenPartition = Rx.Observable.range(1, 20)
+      .partitionNested(function(value) {
+        return value % 2 === 0;
+      });
+
+      var evenSource = evenPartition[0];
+      var oddSource = evenPartition[1];
+
+      var multipleOfSixPartition = evenPartition
+      .partitionNested(
+          function(value) {
+            return value % 3 === 0;
+          }
+      );
+      var multipleOfSixSource = multipleOfSixPartition[0];
+      var notMultipleOfSixSource = multipleOfSixPartition[1];
+
+      multipleOfSixSource
+      .takeUntil(Rx.Observable.timer(5))
+      .toArray()
+      .tap(function(actual) {
+        var expected = [
+          6,
+          12,
+          18
+        ];
+        expect(actual).to.eql(expected);
+      })
+      .concat(
+        notMultipleOfSixSource
+        .takeUntil(Rx.Observable.timer(5))
+        .toArray()
+        .tap(function(actual) {
+          var expected = [
+            1,
+            2,
+            3,
+            4,
+            5,
+            7,
+            8,
+            9,
+            10,
+            11,
+            13,
+            14,
+            15,
+            16,
+            17,
+            19,
+            20
+          ];
+          expect(actual).to.eql(expected);
+        })
+      )
+      .tap(null, done)
+      .subscribeOnCompleted(done);
 
     });
 
-//    it('should work as prototype', function(done) {
-//      var evenPartition = Rx.Observable.range(1, 20)
-//      .nestedPartition(function(value) {
-//        return value % 2 === 0;
-//      });
-//
-//      var evenSource = evenPartition[0];
-//      var oddSource = evenPartition[1];
-//
-//      var multipleOfSixPartition = evenSource
-//      .nestedPartition(
-//          function(value) {
-//            return value % 3 === 0;
-//          },
-//          oddSource
-//      );
-//      var multipleOfSixSource = multipleOfSixPartition[0];
-//      var notMultipleOfSixSource = multipleOfSixPartition[1];
-//
-//      multipleOfSixSource
-//      .takeUntil(Rx.Observable.timer(5))
-//      .toArray()
-//      .doOnNext(function(actual) {
-//        var expected = [
-//          6,
-//          12,
-//          18
-//        ];
-//        expect(actual).to.eql(expected);
-//      })
-//      .concat(
-//        notMultipleOfSixSource
-//        .takeUntil(Rx.Observable.timer(5))
-//        .toArray()
-//        .doOnNext(function(actual) {
-//          var expected = [
-//            1,
-//            2,
-//            3,
-//            4,
-//            5,
-//            7,
-//            8,
-//            9,
-//            10,
-//            11,
-//            13,
-//            14,
-//            15,
-//            16,
-//            17,
-//            19,
-//            20
-//          ];
-//          expect(actual).to.eql(expected);
-//        })
-//      )
-//      .doOnError(done)
-//      .subscribeOnCompleted(done);
-//
-//    });
+    it('should replay', function(done) {
+
+      var fastDelay = 200;
+      var slowDelay = 500;
+
+      var source = Rx.Observable.from([{
+        rating: 4,
+        color: 'green'
+      }, {
+        rating: 4,
+        color: 'red'
+      }, {
+        rating: 2,
+        color: 'yellow'
+      }, {
+        rating: 3,
+        color: 'red'
+      }, {
+        rating: 5,
+        color: 'green'
+      }, {
+        rating: 4,
+        color: 'yellow'
+      }, {
+        rating: 4,
+        color: 'red'
+      }])
+      .delay(fastDelay);
+
+      var rated4PlusPartition = Rx.Observable.partitionNested(
+          source,
+          function(item) {
+            return item.rating >= 4;
+          }
+      );
+      var rated4PlusSource = rated4PlusPartition[0];
+      var ratedUnder4Source = rated4PlusPartition[1]
+      .delay(fastDelay);
+
+      var redRated4PlusPartition = Rx.Observable.partitionNested(
+          [
+            rated4PlusSource,
+            ratedUnder4Source
+          ],
+          function(item) {
+            return item.color === 'red';
+          }
+      );
+
+      var redRated4PlusSource = redRated4PlusPartition[0];
+      var notRedOrRatedUnder4Source = redRated4PlusPartition[1];
+
+      setTimeout(function() {
+        redRated4PlusSource
+        .toArray()
+        .tap(function(actual) {
+          var expected = [{
+            rating: 4,
+            color: 'red'
+          }, {
+            rating: 4,
+            color: 'red'
+          }];
+
+          expect(actual).to.eql(expected);
+        })
+        .concat(
+          notRedOrRatedUnder4Source
+          .toArray()
+          .tap(function(actual) {
+            var expected = [{
+              rating: 4,
+              color: 'green'
+            }, {
+              rating: 5,
+              color: 'green'
+            }, {
+              rating: 4,
+              color: 'yellow'
+            }, {
+              rating: 2,
+              color: 'yellow'
+            }, {
+              rating: 3,
+              color: 'red'
+            }];
+            expect(actual).to.eql(expected);
+          })
+        )
+        .tap(null, done)
+        .subscribeOnCompleted(done);
+      }, slowDelay);
+    });
 
   });
 
