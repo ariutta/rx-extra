@@ -5,9 +5,10 @@
 var expect = require('chai').expect;
 var JSONStream = require('jsonstream');
 var Rx = require('../../index.js');
-var RxFs = require('rx-fs');
+var RxNode = Rx.RxNode;
 var sinon = require('sinon');
 var sologger = require('../sologger.js');
+var stream = require('stream');
 
 //process.env.NODE_ENV = 'development';
 
@@ -778,20 +779,131 @@ describe('Public API', function() {
     });
   });
 
-  it('should run Rx.Observable.prototype.streamThrough', function(done) {
-    RxFs.createReadObservable(__dirname + '/../../package.json', 'utf8')
-    .streamThrough(JSONStream.parse('name'))
+  it('should run RxNode.fromReadableStream then streamThrough', function(done) {
+    var s = new stream.Readable({objectMode: true});
+    s._read = function noop() {};
+
+    var source = RxNode.fromReadableStream(s);
+
+    source
+    .streamThrough(JSONStream.parse('a'))
     .subscribe(function(actual) {
-      expect(actual).to.equal('rx-extra');
+      expect(actual).to.eql(1);
     }, done, done);
+
+    s.push('{"a": 1, "b": 2}');
+    s.push(null);
+  });
+
+  it('should run RxNode.fromUnpausableStream then streamThrough', function(done) {
+    var s = new stream.Readable({objectMode: true});
+    s._read = function noop() {};
+    s.pause = undefined;
+
+    var source = RxNode.fromUnpausableStream(s);
+
+    source
+    .streamThrough(JSONStream.parse('a'))
+    .subscribe(function(actual) {
+      expect(actual).to.eql(1);
+    }, done, done);
+
+    s.push('{"a": 1, "b": 2}');
+    s.push(null);
+  });
+
+  it('should convert unpausable stream to Observable (one element)', function(done) {
+    var s = new stream.Readable({objectMode: true});
+    s._read = function noop() {};
+    s.pause = undefined;
+
+    var source = RxNode.fromUnpausableStream(s);
+
+    source
+    .subscribe(function(actual) {
+      expect(actual).to.eql(0);
+    }, done, done);
+
+    s.push(0);
+    s.push(null);
   });
 
   it('should convert unpausable stream to Observable', function(done) {
-    done(new Error('Have not added a test for ...fromUnpauseableStream'));
+    var s = new stream.Readable({objectMode: true});
+    s._read = function noop() {};
+    s.pause = undefined;
+
+    var source = RxNode.fromUnpausableStream(s);
+
+    source
+    .toArray()
+    .subscribe(function(actual) {
+      expect(actual).to.eql([0, 1, 2]);
+    }, done, done);
+
+    s.push(0);
+    s.push(1);
+    s.push(2);
+    s.push(null);
   });
 
-  it('should pan wrap', function(done) {
-    done(new Error('Have not added a test for ...panWrap'));
+  it('should convert unpausable stream to Observable and hierarchicalPartition', function(done) {
+    var s = new stream.Readable({objectMode: true});
+    s._read = function noop() {};
+    s.pause = undefined;
+
+    RxNode.fromUnpausableStream(s)
+    .hierarchicalPartition(function(x) {
+      return x % 2 === 0;
+    })[0]
+    .toArray()
+    .subscribe(function(actual) {
+      expect(actual).to.eql([0, 2]);
+    }, done, done);
+
+    s.push(0);
+    s.push(1);
+    s.push(2);
+    s.push(null);
   });
+
+  it('should convert readable stream to Observable', function(done) {
+    var s = new stream.Readable({objectMode: true});
+    s._read = function noop() {};
+
+    RxNode.fromReadableStream(s)
+    .toArray()
+    .subscribe(function(actual) {
+      expect(actual).to.eql([0, 1, 2]);
+    }, done, done);
+
+    s.push(0);
+    s.push(1);
+    s.push(2);
+    s.push(null);
+  });
+
+  it('should convert readable stream to Observable and hierarchicalPartition', function(done) {
+    var s = new stream.Readable({objectMode: true});
+    s._read = function noop() {};
+
+    RxNode.fromUnpausableStream(s)
+    .hierarchicalPartition(function(x) {
+      return x % 2 === 0;
+    })[0]
+    .toArray()
+    .subscribe(function(actual) {
+      expect(actual).to.eql([0, 2]);
+    }, done, done);
+
+    s.push(0);
+    s.push(1);
+    s.push(2);
+    s.push(null);
+  });
+
+//  it('should pan wrap', function(done) {
+//    done(new Error('Have not added a test for ...panWrap'));
+//  });
 
 });
