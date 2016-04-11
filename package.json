@@ -2,7 +2,7 @@
   "name": "rx-extra",
   "version": "1.0.2",
   "description": "rx-extra contains additional functionality not contained in the rx package, such as \"splitOnChange\".",
-  "main": "index.js",
+  "main": "./lib/main.js",
   "scripts": {
     "test": "mocha test/spec/api.js"
   },
@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/ariutta/rx-extra#readme",
   "dependencies": {
+    "@rxjs/rx": "^4.1.0",
     "inherits": "^2.0.1",
     "rx-node": "^1.0.1"
   },
