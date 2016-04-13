@@ -2,6 +2,8 @@
  * Test public APIs
  */
 
+var csv = require('csv-streamify');
+var csvOptions = {delimiter: '\t'};
 var expect = require('chai').expect;
 var JSONStream = require('jsonstream');
 var Rx = require('../../index.js');
@@ -779,8 +781,9 @@ describe('Public API', function() {
     });
   });
 
-  it('should run RxNode.fromReadableStream then streamThrough', function(done) {
-    var s = new stream.Readable({objectMode: true});
+  it('should run RxNode.fromReadableStream then streamThrough (json)', function(done) {
+    //var s = new stream.Readable({objectMode: true});
+    var s = new stream.Readable();
     s._read = function noop() {};
 
     var source = RxNode.fromReadableStream(s);
@@ -795,8 +798,9 @@ describe('Public API', function() {
     s.push(null);
   });
 
-  it('should run RxNode.fromUnpausableStream then streamThrough', function(done) {
-    var s = new stream.Readable({objectMode: true});
+  it('should run RxNode.fromUnpausableStream then streamThrough (json)', function(done) {
+    //var s = new stream.Readable({objectMode: true});
+    var s = new stream.Readable();
     s._read = function noop() {};
     s.pause = undefined;
 
@@ -809,6 +813,60 @@ describe('Public API', function() {
     }, done, done);
 
     s.push('{"a": 1, "b": 2}');
+    s.push(null);
+  });
+
+  it('should run RxNode.fromReadableStream then streamThrough (csv w/ objectMode)', function(done) {
+    //var s = new stream.Readable({objectMode: true});
+    var s = new stream.Readable();
+    s._read = function noop() {};
+
+    var source = RxNode.fromReadableStream(s);
+
+    source
+    .streamThrough(csv(csvOptions))
+    .map(function(buf) {
+      return JSON.parse(buf.toString());
+    })
+    .toArray()
+    .subscribe(function(actual) {
+      expect(actual).to.eql([
+        ['header1', 'header2', 'header3'],
+        ['a1', 'b1', 'c1'],
+        ['a2', 'b2', 'c2'],
+      ]);
+    }, done, done);
+
+    s.push('header1\theader2\theader3\n');
+    s.push('a1\tb1\tc1\n');
+    s.push('a2\tb2\tc2\n');
+    s.push(null);
+  });
+
+  it('should run RxNode.fromUnpausableStream then streamThrough (csv)', function(done) {
+    //var s = new stream.Readable({objectMode: true});
+    var s = new stream.Readable();
+    s._read = function noop() {};
+
+    var source = RxNode.fromUnpausableStream(s);
+
+    source
+    .streamThrough(csv(csvOptions))
+    .map(function(buf) {
+      return JSON.parse(buf.toString());
+    })
+    .toArray()
+    .subscribe(function(actual) {
+      expect(actual).to.eql([
+        ['header1', 'header2', 'header3'],
+        ['a1', 'b1', 'c1'],
+        ['a2', 'b2', 'c2'],
+      ]);
+    }, done, done);
+
+    s.push('header1\theader2\theader3\n');
+    s.push('a1\tb1\tc1\n');
+    s.push('a2\tb2\tc2\n');
     s.push(null);
   });
 

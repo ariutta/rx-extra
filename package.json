@@ -6,9 +6,7 @@
   "scripts": {
     "test": "mocha test/spec/api.js"
   },
-  "browser": {
-    "rx-node": false
-  },
+  "browser": {},
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/ariutta/rx-extra.git"
@@ -30,6 +28,7 @@
   },
   "devDependencies": {
     "chai": "^3.4.1",
+    "csv-streamify": "^3.0.3",
     "jsonstream": "^1.0.3",
     "loggin": "^3.0.1",
     "mocha": "^2.3.4",
