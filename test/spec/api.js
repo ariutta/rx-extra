@@ -3,7 +3,6 @@
  */
 
 var csv = require('csv-streamify');
-var csvOptions = {delimiter: '\t'};
 var expect = require('chai').expect;
 var JSONStream = require('jsonstream');
 var Rx = require('../../index.js');
@@ -824,10 +823,7 @@ describe('Public API', function() {
     var source = RxNode.fromReadableStream(s);
 
     source
-    .streamThrough(csv(csvOptions))
-    .map(function(buf) {
-      return JSON.parse(buf.toString());
-    })
+    .streamThrough(csv({objectMode: true, delimiter: '\t'}))
     .toArray()
     .subscribe(function(actual) {
       expect(actual).to.eql([
@@ -851,7 +847,7 @@ describe('Public API', function() {
     var source = RxNode.fromUnpausableStream(s);
 
     source
-    .streamThrough(csv(csvOptions))
+    .streamThrough(csv({delimiter: '\t'}))
     .map(function(buf) {
       return JSON.parse(buf.toString());
     })
