@@ -16,8 +16,12 @@ var stream = require('stream');
 // Run tests
 describe('Public API', function() {
 
+  it('long stack support should be false by default', function() {
+    expect(Rx.config.longStackSupport).to.eql(false);
+  });
+
   describe('hierarchicalPartition', function() {
-    it('should work as Rx.Observable...', function(done) {
+    it('should work via non-chained call (Rx.Observable.hierarchicalPartition())', function(done) {
       var source = Rx.Observable.range(1, 20);
 
       var evenOddPartition = Rx.Observable.hierarchicalPartition(
@@ -780,180 +784,376 @@ describe('Public API', function() {
     });
   });
 
-  it('should run RxNode.fromReadableStream then streamThrough (json)', function(done) {
-    //var s = new stream.Readable({objectMode: true});
-    var s = new stream.Readable();
-    s._read = function noop() {};
+  describe('Rx.Observable.fromReadableStream', function() {
+    it('should convert a pausable stream to Observable (json)', function(done) {
+      //var s = new stream.Readable({objectMode: true});
+      var s = new stream.Readable();
+      s._read = function noop() {};
 
-    var source = RxNode.fromReadableStream(s);
+      var source = Rx.Observable.fromReadableStream(s);
 
-    source
-    .streamThrough(JSONStream.parse('a'))
-    .subscribe(function(actual) {
-      expect(actual).to.eql(1);
-    }, done, done);
+      source
+      .streamThrough(JSONStream.parse('a'))
+      .subscribe(function(actual) {
+        expect(actual).to.eql(1);
+      }, done, done);
 
-    s.push('{"a": 1, "b": 2}');
-    s.push(null);
+      s.push('{"a": 1, "b": 2}');
+      s.push(null);
+    });
+
+    it(['should convert an unpausable stream to an Observable that works with ',
+        'streamThrough (input: json object)'].join(''), function(done) {
+      //var s = new stream.Readable({objectMode: true});
+      var s = new stream.Readable();
+      s._read = function noop() {};
+      s.pause = undefined;
+
+      var source = Rx.Observable.fromReadableStream(s);
+
+      source
+      .streamThrough(JSONStream.parse('a'))
+      .subscribe(function(actual) {
+        expect(actual).to.eql(1);
+      }, done, done);
+
+      s.push('{"a": 1, "b": 2}');
+      s.push(null);
+    });
+
+    it(['should convert a pausable stream to an Observable ',
+        '(input: csv stream, objectMode: true)'].join(''), function(done) {
+      //var s = new stream.Readable({objectMode: true});
+      var s = new stream.Readable();
+      s._read = function noop() {};
+
+      var source = Rx.Observable.fromReadableStream(s);
+
+      source
+      .streamThrough(csv({objectMode: true, delimiter: '\t'}))
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql([
+          ['header1', 'header2', 'header3'],
+          ['a1', 'b1', 'c1'],
+          ['a2', 'b2', 'c2'],
+        ]);
+      }, done, done);
+
+      s.push('header1\theader2\theader3\n');
+      s.push('a1\tb1\tc1\n');
+      s.push('a2\tb2\tc2\n');
+      s.push(null);
+    });
+
+    it(['should convert an unpausable stream to a Observable ',
+        '(input: csv stream)'].join(''), function(done) {
+      //var s = new stream.Readable({objectMode: true});
+      var s = new stream.Readable();
+      s._read = function noop() {};
+
+      var source = Rx.Observable.fromReadableStream(s);
+
+      source
+      .streamThrough(csv({delimiter: '\t'}))
+      .map(function(buf) {
+        return JSON.parse(buf.toString());
+      })
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql([
+          ['header1', 'header2', 'header3'],
+          ['a1', 'b1', 'c1'],
+          ['a2', 'b2', 'c2'],
+        ]);
+      }, done, done);
+
+      s.push('header1\theader2\theader3\n');
+      s.push('a1\tb1\tc1\n');
+      s.push('a2\tb2\tc2\n');
+      s.push(null);
+    });
+
+    it(['should convert an unpausable stream to an Observable ',
+        '(input: single element [an integer], objectMode: true)'].join(''), function(done) {
+      var s = new stream.Readable({objectMode: true});
+      s._read = function noop() {};
+      s.pause = undefined;
+
+      var source = Rx.Observable.fromReadableStream(s);
+
+      source
+      .subscribe(function(actual) {
+        expect(actual).to.eql(0);
+      }, done, done);
+
+      s.push(0);
+      s.push(null);
+    });
+
+    it('should convert an unpausable stream to an Observable',
+    function(done) {
+      var s = new stream.Readable({objectMode: true});
+      s._read = function noop() {};
+      s.pause = undefined;
+
+      var source = Rx.Observable.fromReadableStream(s);
+
+      source
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql([0, 1, 2]);
+      }, done, done);
+
+      s.push(0);
+      s.push(1);
+      s.push(2);
+      s.push(null);
+    });
+
+    it(['should convert an unpausable stream to an Observable that ',
+        'works with hierarchicalPartition'].join(''), function(done) {
+      var s = new stream.Readable({objectMode: true});
+      s._read = function noop() {};
+      s.pause = undefined;
+
+      Rx.Observable.fromReadableStream(s)
+      .hierarchicalPartition(function(x) {
+        return x % 2 === 0;
+      })[0]
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql([0, 2]);
+      }, done, done);
+
+      s.push(0);
+      s.push(1);
+      s.push(2);
+      s.push(null);
+    });
+
+    it('should convert readable stream to Observable', function(done) {
+      var s = new stream.Readable({objectMode: true});
+      s._read = function noop() {};
+
+      Rx.Observable.fromReadableStream(s)
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql([0, 1, 2]);
+      }, done, done);
+
+      s.push(0);
+      s.push(1);
+      s.push(2);
+      s.push(null);
+    });
+
+    it(['should convert a pausable stream to an Observable that ',
+        'works with hierarchicalPartition'].join(''), function(done) {
+      var s = new stream.Readable({objectMode: true});
+      s._read = function noop() {};
+
+      Rx.Observable.fromReadableStream(s)
+      .hierarchicalPartition(function(x) {
+        return x % 2 === 0;
+      })[0]
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql([0, 2]);
+      }, done, done);
+
+      s.push(0);
+      s.push(1);
+      s.push(2);
+      s.push(null);
+    });
+
   });
 
-  it('should run RxNode.fromUnpausableStream then streamThrough (json)', function(done) {
-    //var s = new stream.Readable({objectMode: true});
-    var s = new stream.Readable();
-    s._read = function noop() {};
-    s.pause = undefined;
+  describe('RxNode.fromReadableStream', function() {
+    it('should convert a pausable stream to Observable (json)', function(done) {
+      //var s = new stream.Readable({objectMode: true});
+      var s = new stream.Readable();
+      s._read = function noop() {};
 
-    var source = RxNode.fromUnpausableStream(s);
+      var source = RxNode.fromReadableStream(s);
 
-    source
-    .streamThrough(JSONStream.parse('a'))
-    .subscribe(function(actual) {
-      expect(actual).to.eql(1);
-    }, done, done);
+      source
+      .streamThrough(JSONStream.parse('a'))
+      .subscribe(function(actual) {
+        expect(actual).to.eql(1);
+      }, done, done);
 
-    s.push('{"a": 1, "b": 2}');
-    s.push(null);
-  });
+      s.push('{"a": 1, "b": 2}');
+      s.push(null);
+    });
 
-  it('should run RxNode.fromReadableStream then streamThrough (csv w/ objectMode)', function(done) {
-    //var s = new stream.Readable({objectMode: true});
-    var s = new stream.Readable();
-    s._read = function noop() {};
+    it(['should convert an unpausable stream to an Observable that works with ',
+        'streamThrough (input: json object)'].join(''), function(done) {
+      //var s = new stream.Readable({objectMode: true});
+      var s = new stream.Readable();
+      s._read = function noop() {};
+      s.pause = undefined;
 
-    var source = RxNode.fromReadableStream(s);
+      var source = RxNode.fromReadableStream(s);
 
-    source
-    .streamThrough(csv({objectMode: true, delimiter: '\t'}))
-    .toArray()
-    .subscribe(function(actual) {
-      expect(actual).to.eql([
-        ['header1', 'header2', 'header3'],
-        ['a1', 'b1', 'c1'],
-        ['a2', 'b2', 'c2'],
-      ]);
-    }, done, done);
+      source
+      .streamThrough(JSONStream.parse('a'))
+      .subscribe(function(actual) {
+        expect(actual).to.eql(1);
+      }, done, done);
 
-    s.push('header1\theader2\theader3\n');
-    s.push('a1\tb1\tc1\n');
-    s.push('a2\tb2\tc2\n');
-    s.push(null);
-  });
+      s.push('{"a": 1, "b": 2}');
+      s.push(null);
+    });
 
-  it('should run RxNode.fromUnpausableStream then streamThrough (csv)', function(done) {
-    //var s = new stream.Readable({objectMode: true});
-    var s = new stream.Readable();
-    s._read = function noop() {};
+    it(['should convert a pausable stream to an Observable ',
+        '(input: csv stream, objectMode: true)'].join(''), function(done) {
+      //var s = new stream.Readable({objectMode: true});
+      var s = new stream.Readable();
+      s._read = function noop() {};
 
-    var source = RxNode.fromUnpausableStream(s);
+      var source = RxNode.fromReadableStream(s);
 
-    source
-    .streamThrough(csv({delimiter: '\t'}))
-    .map(function(buf) {
-      return JSON.parse(buf.toString());
-    })
-    .toArray()
-    .subscribe(function(actual) {
-      expect(actual).to.eql([
-        ['header1', 'header2', 'header3'],
-        ['a1', 'b1', 'c1'],
-        ['a2', 'b2', 'c2'],
-      ]);
-    }, done, done);
+      source
+      .streamThrough(csv({objectMode: true, delimiter: '\t'}))
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql([
+          ['header1', 'header2', 'header3'],
+          ['a1', 'b1', 'c1'],
+          ['a2', 'b2', 'c2'],
+        ]);
+      }, done, done);
 
-    s.push('header1\theader2\theader3\n');
-    s.push('a1\tb1\tc1\n');
-    s.push('a2\tb2\tc2\n');
-    s.push(null);
-  });
+      s.push('header1\theader2\theader3\n');
+      s.push('a1\tb1\tc1\n');
+      s.push('a2\tb2\tc2\n');
+      s.push(null);
+    });
 
-  it('should convert unpausable stream to Observable (one element)', function(done) {
-    var s = new stream.Readable({objectMode: true});
-    s._read = function noop() {};
-    s.pause = undefined;
+    it(['should convert an unpausable stream to a Observable ',
+        '(input: csv stream)'].join(''), function(done) {
+      //var s = new stream.Readable({objectMode: true});
+      var s = new stream.Readable();
+      s._read = function noop() {};
 
-    var source = RxNode.fromUnpausableStream(s);
+      var source = RxNode.fromReadableStream(s);
 
-    source
-    .subscribe(function(actual) {
-      expect(actual).to.eql(0);
-    }, done, done);
+      source
+      .streamThrough(csv({delimiter: '\t'}))
+      .map(function(buf) {
+        return JSON.parse(buf.toString());
+      })
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql([
+          ['header1', 'header2', 'header3'],
+          ['a1', 'b1', 'c1'],
+          ['a2', 'b2', 'c2'],
+        ]);
+      }, done, done);
 
-    s.push(0);
-    s.push(null);
-  });
+      s.push('header1\theader2\theader3\n');
+      s.push('a1\tb1\tc1\n');
+      s.push('a2\tb2\tc2\n');
+      s.push(null);
+    });
 
-  it('should convert unpausable stream to Observable', function(done) {
-    var s = new stream.Readable({objectMode: true});
-    s._read = function noop() {};
-    s.pause = undefined;
+    it(['should convert an unpausable stream to an Observable ',
+        '(input: single element [an integer], objectMode: true)'].join(''), function(done) {
+      var s = new stream.Readable({objectMode: true});
+      s._read = function noop() {};
+      s.pause = undefined;
 
-    var source = RxNode.fromUnpausableStream(s);
+      var source = RxNode.fromReadableStream(s);
 
-    source
-    .toArray()
-    .subscribe(function(actual) {
-      expect(actual).to.eql([0, 1, 2]);
-    }, done, done);
+      source
+      .subscribe(function(actual) {
+        expect(actual).to.eql(0);
+      }, done, done);
 
-    s.push(0);
-    s.push(1);
-    s.push(2);
-    s.push(null);
-  });
+      s.push(0);
+      s.push(null);
+    });
 
-  it('should convert unpausable stream to Observable and hierarchicalPartition', function(done) {
-    var s = new stream.Readable({objectMode: true});
-    s._read = function noop() {};
-    s.pause = undefined;
+    it('should convert an unpausable stream to an Observable',
+    function(done) {
+      var s = new stream.Readable({objectMode: true});
+      s._read = function noop() {};
+      s.pause = undefined;
 
-    RxNode.fromUnpausableStream(s)
-    .hierarchicalPartition(function(x) {
-      return x % 2 === 0;
-    })[0]
-    .toArray()
-    .subscribe(function(actual) {
-      expect(actual).to.eql([0, 2]);
-    }, done, done);
+      var source = RxNode.fromReadableStream(s);
 
-    s.push(0);
-    s.push(1);
-    s.push(2);
-    s.push(null);
-  });
+      source
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql([0, 1, 2]);
+      }, done, done);
 
-  it('should convert readable stream to Observable', function(done) {
-    var s = new stream.Readable({objectMode: true});
-    s._read = function noop() {};
+      s.push(0);
+      s.push(1);
+      s.push(2);
+      s.push(null);
+    });
 
-    RxNode.fromReadableStream(s)
-    .toArray()
-    .subscribe(function(actual) {
-      expect(actual).to.eql([0, 1, 2]);
-    }, done, done);
+    it(['should convert an unpausable stream to an Observable that ',
+        'works with hierarchicalPartition'].join(''), function(done) {
+      var s = new stream.Readable({objectMode: true});
+      s._read = function noop() {};
+      s.pause = undefined;
 
-    s.push(0);
-    s.push(1);
-    s.push(2);
-    s.push(null);
-  });
+      RxNode.fromReadableStream(s)
+      .hierarchicalPartition(function(x) {
+        return x % 2 === 0;
+      })[0]
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql([0, 2]);
+      }, done, done);
 
-  it('should convert readable stream to Observable and hierarchicalPartition', function(done) {
-    var s = new stream.Readable({objectMode: true});
-    s._read = function noop() {};
+      s.push(0);
+      s.push(1);
+      s.push(2);
+      s.push(null);
+    });
 
-    RxNode.fromUnpausableStream(s)
-    .hierarchicalPartition(function(x) {
-      return x % 2 === 0;
-    })[0]
-    .toArray()
-    .subscribe(function(actual) {
-      expect(actual).to.eql([0, 2]);
-    }, done, done);
+    it('should convert readable stream to Observable', function(done) {
+      var s = new stream.Readable({objectMode: true});
+      s._read = function noop() {};
 
-    s.push(0);
-    s.push(1);
-    s.push(2);
-    s.push(null);
+      RxNode.fromReadableStream(s)
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql([0, 1, 2]);
+      }, done, done);
+
+      s.push(0);
+      s.push(1);
+      s.push(2);
+      s.push(null);
+    });
+
+    it(['should convert a pausable stream to an Observable that ',
+        'works with hierarchicalPartition'].join(''), function(done) {
+      var s = new stream.Readable({objectMode: true});
+      s._read = function noop() {};
+
+      RxNode.fromReadableStream(s)
+      .hierarchicalPartition(function(x) {
+        return x % 2 === 0;
+      })[0]
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql([0, 2]);
+      }, done, done);
+
+      s.push(0);
+      s.push(1);
+      s.push(2);
+      s.push(null);
+    });
+
   });
 
 //  it('should pan wrap', function(done) {
