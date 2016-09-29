@@ -3,8 +3,25 @@
   "version": "1.0.2",
   "description": "rx-extra contains additional functionality not contained in the rx package, such as \"splitOnChange\".",
   "main": "index.js",
+  "main:esnext": "lib-esnext/main.js",
   "scripts": {
-    "test": "mocha test/spec/api.js"
+    "compile": "npm-run-all compile:*",
+    "compile:es5": "rm -rf lib-es5 && cp -r src/ lib-es5 && tsc lib-es5/*.ts --pretty --sourceMap --module commonjs --moduleResolution node --target ES5 && rm -rf lib-es5/*.ts && rm -rf lib && mv lib-es5/ lib && echo ok || echo not ok",
+    "compile:esnext": "rm -rf lib-esnext && mkdir lib-esnext && tsc src/*.ts --pretty --sourceMap --module commonjs --target ES2015 --outDir lib-esnext && echo ok || echo not ok",
+    "test": "mocha test/spec/api.js --reporter min --colors && echo ok || echo not ok",
+    "watch": "npm-watch"
+  },
+  "watch": {
+    "compile:es5": {
+      "patterns": ["src"],
+      "extensions": "ts,tsx,json",
+      "quiet": true
+    },
+    "test": {
+      "patterns": ["lib", "test"],
+      "extensions": "js,jsx,json",
+      "quiet": true
+    }
   },
   "browser": {},
   "repository": {
@@ -23,16 +40,23 @@
   },
   "homepage": "https://github.com/ariutta/rx-extra#readme",
   "dependencies": {
-    "rx": "^4.0.7",
-    "rx-node": "^1.0.1"
+    "@types/es6-promise": "0.0.32",
+    "rx-node": "^1.0.1",
+    "rxjs": "^5.0.0-beta.12"
   },
   "devDependencies": {
-    "chai": "^3.4.1",
+    "browserify": "^13.1.0",
+    "chai": "^3.5.0",
     "csv-streamify": "^3.0.3",
     "jsonstream": "^1.0.3",
     "loggin": "^3.0.1",
-    "mocha": "^2.3.4",
-    "sinon": "^1.17.2"
+    "mkdirp": "^0.5.1",
+    "mocha": "^3.1.0",
+    "npm-run-all": "^3.1.0",
+    "npm-watch": "^0.1.6",
+    "sinon": "^1.17.6",
+    "tsify": "^1.0.7",
+    "typescript": "^2.0.3"
   },
   "semverBumper": {
     "jsonFiles": [
