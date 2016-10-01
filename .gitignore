@@ -1,0 +1,4 @@
+lib/*
+lib-esnext/*
+dist/*
+node-modules/*
