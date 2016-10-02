@@ -4,12 +4,16 @@
 
 import {Observable} from 'rxjs/Observable';
 import 'rxjs/add/observable/of';
+import 'rxjs/add/observable/fromEvent';
+import 'rxjs/add/observable/race';
+import 'rxjs/add/observable/timer';
 import 'rxjs/add/operator/delay';
+import 'rxjs/add/operator/delayWhen';
 import 'rxjs/add/operator/let';
 import './fromNodeReadableStream'
 
 interface Options {
-	delay: number;
+	delay?: number;
 }
 
 declare module 'rxjs/Observable' {
@@ -19,45 +23,76 @@ declare module 'rxjs/Observable' {
 	}
 }
 
-function getDelay(attempt, previousDelay, delay) {
+/************************************************
+ * Find a delay (ms) to match the transform stream,
+ * increasing when a write returns false
+ * (Node stream signal to initiate backpressure)
+ * and decreasing when it does (min 0).
+ ************************************************/
+function getDelay(bpWarningCount, previousDelay, delay) {
 	let nextDelay;
-	if (attempt === 0) {
+	if (bpWarningCount === 0) {
 		nextDelay = (previousDelay + delay) / 2;
 	} else {
-		nextDelay = Math.pow(2, attempt) * Math.max(delay, 1);
+		nextDelay = Math.pow(2, bpWarningCount - 1) * Math.max(delay, 1);
 	}
-	return nextDelay;
+	return Math.ceil(nextDelay);
 }
 
 /**
  * throughNodeStream
  *
  * @param {Stream} transformStream
+ * @param {Object} [options={delay: 0}]
+ * @param {Number} options.delay delay (in ms)
  * @return {Observable}
  */
 Observable.prototype.throughNodeStream = function(transformStream, options: Options = {delay: 0}) {
-	let attempt = 0;
+	// this is the number of consecutive times, starting with the most recent write
+	// and going backwards, that we've received a backpressure warning after a write.
+	let bpWarningCount = 0;
 	let delay = options.delay;
 	let previousDelay = delay;
+	// 'drain' event added in Node v0.9.4,
+	// so we're actually using two mechanisms
+	// for handling backpressure:
+	// * the drain event, and
+	// * a backoff algorithm, in case "drain" is
+	//   not supported by the current stream.
+	let drainSource = Observable.fromEvent(transformStream, 'drain')
+	.do(() => {
+		bpWarningCount = 0;
+	});
 	return this.let(function(observable) {
-		let source = observable.concatMap(function(x) {
-			let delayable = Observable.of(x);
-			return (delay === 0) ? delayable : delayable.delay(delay);
-		});
+		let transformObservable = Observable.fromNodeReadableStream(
+				transformStream,
+				'end'
+		);
 
-		source.subscribe(
+		observable.concatMap(function(x) {
+			let delayableSource = Observable.of(x);
+			if (delay === 0) {
+				return delayableSource;
+			} else {
+				return Observable.race(
+					drainSource.first().concatMap(x => delayableSource),
+					delayableSource.delay(delay)
+				);
+			}
+		})
+		.subscribe(
 				function(input) {
 					// push some data
 					let pushResponse = transformStream.write(input);
 					// NOTE: if response is false, we must delay (backpressure).
-					// backpressure discussion for RxJS 5:
+					// Semi-related backpressure discussion for RxJS 5:
 					// https://github.com/ReactiveX/rxjs/issues/71#issuecomment-228824763
 					if (!pushResponse) {
-						attempt += 1;
+						bpWarningCount += 1;
 					} else {
-						attempt = 0;
+						bpWarningCount = 0;
 					}
-					let nextDelay = getDelay(attempt, previousDelay, delay);
+					let nextDelay = getDelay(bpWarningCount, previousDelay, delay);
 					previousDelay = delay;
 					delay = nextDelay;
 				},
@@ -68,11 +103,6 @@ Observable.prototype.throughNodeStream = function(transformStream, options: Opti
 				function() {
 					transformStream.end();
 				}
-		);
-
-		let transformObservable = Observable.fromNodeReadableStream(
-				transformStream,
-				'end'
 		);
 
 		return transformObservable;

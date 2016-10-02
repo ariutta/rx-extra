@@ -4,21 +4,24 @@
 
 // TODO look at using marble tests:
 // https://github.com/ReactiveX/rxjs/blob/master/doc/writing-marble-tests.md
-// http://stackoverflow.com/questions/36979451/using-marble-testing-rxjs5-method-inside-another-project
+// http://stackoverflow.com/questions/36979451/
+//    using-marble-testing-rxjs5-method-inside-another-project
 
+var _ = require('lodash');
 var csv = require('csv-streamify');
 var expect = require('chai').expect;
+var hl = require('highland');
 var JSONStream = require('jsonstream');
-//var Rx = require('../../index.js');
-//import * as Rx from '../../index.js';
 var Rx = require('../../index.js');
 var RxNode = Rx.RxNode;
 var sinon = require('sinon');
 var sologger = require('../sologger.js');
 var stream = require('stream');
-
-//process.env.NODE_ENV = 'development';
-
+var ThrottledTransform = require('throttled-transform-stream').default;
+var through = require('through');
+var through2 = require('through2');
+var transform = require('to-transform');
+ 
 // Run tests
 describe('Public API', function() {
 
@@ -825,9 +828,9 @@ describe('Public API', function() {
       ['{"a": 1, "b": 2}'],
       ['{"a": 1, "b": 2}', '{"a": 1, "b": 2}'],
       ['{"a": 1, "b": 2}', '{"c": 3, "b": 2}', '{"y": "why", "b": 2}', '{"d": true, "b": 2}'],
-      [{"a": 1, "b": 2}],
-      [{"a": 1, "b": 2}, {"a": 1, "b": 2}],
-      [{"a": 1, "b": 2}, {"c": 3, "b": 2}, {"y": "why", "b": 2}, {"d": true, "b": 2}],
+      [{'a': 1, 'b': 2}],
+      [{'a': 1, 'b': 2}, {'a': 1, 'b': 2}],
+      [{'a': 1, 'b': 2}, {'c': 3, 'b': 2}, {'y': 'why', 'b': 2}, {'d': true, 'b': 2}],
     ];
     var objectModes = [true, false];
     var pauseables = [true, false];
@@ -849,7 +852,6 @@ describe('Public API', function() {
 
   describe('Rx.Observable.prototype.throughNodeStream', function() {
     it('should convert a pausable stream to Observable (json)', function(done) {
-      //var s = new stream.Readable({objectMode: true});
       var s = new stream.Readable();
       s._read = function noop() {};
 
@@ -909,7 +911,7 @@ describe('Public API', function() {
       s.push(null);
     });
 
-    it(['should convert an unpausable stream to a Observable ',
+    it(['should convert an unpausable stream to an Observable ',
         '(input: csv stream)'].join(''), function(done) {
       //var s = new stream.Readable({objectMode: true});
       var s = new stream.Readable();
@@ -1029,6 +1031,454 @@ describe('Public API', function() {
       s.push(1);
       s.push(2);
       s.push(null);
+    });
+
+    it('should run Observable through slow "ThrottledTransform" transform stream', function(done) {
+      let input = _.range(20)
+      const SlowTransformStream = ThrottledTransform.create((data, encoding, done) => {
+        setTimeout(function() {
+          done(null, data);
+        }, 100);
+      });
+
+      var source = Rx.Observable.from(input)
+      .map(x => x.toString())
+      .throughNodeStream(new SlowTransformStream())
+      .map(x => parseInt(x.toString()))
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql(input);
+      }, done, done);
+    });
+
+    it('should run Observable through slow "to-transform" transform stream', function(done) {
+      let input = _.range(20);
+      var TransformStream = transform((x, done) => {
+        setTimeout(function() {
+          let output = String(parseInt(x) + 1);
+          done(null, output);
+        }, 50);
+      });
+
+      var source = Rx.Observable.from(input)
+      .map(x => x.toString())
+      .throughNodeStream(new TransformStream())
+      .map(x => parseInt(x.toString()))
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql(input.map(x => x + 1));
+      }, done, done);
+    });
+
+    describe('pass Observable through highland transform stream', function() {
+      let input = _.range(20);
+      let expected = input.reduce(function(acc, x) {
+        acc = acc.concat(_.fill(Array(x), x));
+        return acc;
+      }, []);
+      let maxDelay = 20;
+
+      it('should work when stream is fast', function(done) {
+        var source = Rx.Observable.from(input);
+
+        var transformStream = hl.pipeline(function (s) {
+          return s.consume(function(err, x, push, next) {
+            if (err) {
+              // pass errors along the stream and consume next value
+              push(err);
+              next();
+            } else if (x === hl.nil || typeof x === 'undefined' || x === null) {
+              // pass nil (end event) along the stream
+              push(null, x);
+            } else {
+              for (var i=0; i<x; i++) {
+                push(null, x);
+              }
+              next();
+            }
+          });
+        });
+
+        source
+        .throughNodeStream(transformStream)
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
+      it('should work when stream is variably slow to complete', function(done) {
+        var source = Rx.Observable.from(input);
+
+        var transformStream = hl.pipeline(function (s) {
+          return s.consume(function(err, x, push, next) {
+            if (err) {
+              // pass errors along the stream and consume next value
+              push(err);
+              next();
+            } else if (x === hl.nil || typeof x === 'undefined' || x === null) {
+              // pass nil (end event) along the stream
+              setTimeout(function() {
+                push(null, x);
+              }, 21);
+            } else {
+              for (var i=0; i<x; i++) {
+                push(null, x);
+              }
+              setTimeout(function() {
+                next();
+              }, maxDelay / x);
+            }
+          });
+        });
+
+        source
+        .throughNodeStream(transformStream)
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
+      it('should work when stream is consistently slow to complete', function(done) {
+        var transformStream = hl.pipeline(function (s) {
+          return s.consume(function(err, x, push, next) {
+            if (err) {
+              // pass errors along the stream and consume next value
+              push(err);
+              next();
+            } else if (x === hl.nil || typeof x === 'undefined' || x === null) {
+              // pass nil (end event) along the stream
+              setTimeout(function() {
+                push(null, x);
+              }, maxDelay);
+            } else {
+              for (var i=0; i<x; i++) {
+                push(null, x);
+              }
+              setTimeout(function() {
+                next();
+              }, maxDelay);
+            }
+          });
+        });
+
+        var source = Rx.Observable.from(input)
+        .throughNodeStream(transformStream)
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
+      it('should work when stream is variably slow to produce', function(done) {
+        var transformStream = hl.pipeline(function (s) {
+          return s.consume(function(err, x, push, next) {
+            if (err) {
+              // pass errors along the stream and consume next value
+              push(err);
+              next();
+            } else if (x === hl.nil || typeof x === 'undefined' || x === null) {
+              // pass nil (end event) along the stream
+              setTimeout(function() {
+                push(null, x);
+              }, maxDelay);
+            } else {
+              setTimeout(function() {
+                for (var i=0; i<x; i++) {
+                  push(null, x);
+                }
+                next();
+              }, maxDelay);
+            }
+          });
+        });
+
+        var source = Rx.Observable.from(input)
+        .throughNodeStream(transformStream)
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
+      it('should work when stream is consistently slow to produce', function(done) {
+        var transformStream = hl.pipeline(function (s) {
+          return s.consume(function(err, x, push, next) {
+            if (err) {
+              // pass errors along the stream and consume next value
+              push(err);
+              next();
+            } else if (x === hl.nil || typeof x === 'undefined' || x === null) {
+              // pass nil (end event) along the stream
+              setTimeout(function() {
+                push(null, x);
+              }, maxDelay);
+            } else {
+              setTimeout(function() {
+                for (var i=0; i<x; i++) {
+                  push(null, x);
+                }
+                next();
+              }, maxDelay / x);
+            }
+          });
+        });
+
+        Rx.Observable.from(input)
+        .throughNodeStream(transformStream)
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
+    });
+
+    describe('pass Observable through a "through" transform stream', function() {
+      let input = _.range(20);
+      let expected = input.reduce(function(acc, x) {
+        acc = acc.concat(_.fill(Array(x), x + 1));
+        return acc;
+      }, []);
+      let maxDelay = 20;
+
+      it('should work when stream is fast (end not defined/use default)', function(done) {
+        // NOTE: "through" uses "push" as an alias for "queue"
+        // NOTE: when "end" function is not defined,
+        //   "through" default is "function () { this.queue(null) }"
+        var transformStream = through(function write(x) {
+          var that = this;
+          for (var i=0; i<x; i++) {
+            that.queue(String(parseInt(x) + 1));
+          }
+        });
+
+        var source = Rx.Observable.from(input)
+        .map(x => x.toString())
+        .throughNodeStream(transformStream)
+        .map(x => parseInt(x.toString()))
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
+      it('should work when stream is variably slow to produce', function(done) {
+        var transformStream = through(function write(x) {
+          this.pause();
+          setTimeout(function() {
+            for (var i=0; i<x; i++) {
+              this.queue(String(parseInt(x) + 1));
+            }
+            this.resume();
+          }.bind(this), x / maxDelay);
+        }, function() {
+          setTimeout(function() {
+            this.queue(null);
+          }.bind(this), maxDelay);
+        });
+
+        var source = Rx.Observable.from(input)
+        .map(x => x.toString())
+        .throughNodeStream(transformStream)
+        .map(x => parseInt(x.toString()))
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
+      it('should work when stream is consistently slow to produce', function(done) {
+        var transformStream = through(function write(x) {
+          this.pause();
+          setTimeout(function() {
+            for (var i=0; i<x; i++) {
+              this.queue(String(parseInt(x) + 1));
+            }
+            this.resume();
+          }.bind(this), maxDelay);
+        }, function() {
+          setTimeout(function() {
+            this.queue(null);
+          }.bind(this), maxDelay);
+        });
+
+        var source = Rx.Observable.from(input)
+        .map(x => x.toString())
+        .throughNodeStream(transformStream)
+        .map(x => parseInt(x.toString()))
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
+      it('should work when stream is variably slow to complete', function(done) {
+        var transformStream = through(function write(x) {
+          this.pause();
+          for (var i=0; i<x; i++) {
+            this.queue(String(parseInt(x) + 1));
+          }
+          setTimeout(function() {
+            this.resume();
+          }.bind(this),  x / maxDelay);
+        }, function() {
+          setTimeout(function() {
+            this.queue(null);
+          }.bind(this), maxDelay);
+        });
+
+        var source = Rx.Observable.from(input)
+        .map(x => x.toString())
+        .throughNodeStream(transformStream)
+        .map(x => parseInt(x.toString()))
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
+      it('should work when stream is slow to complete', function(done) {
+        var transformStream = through(function write(x) {
+          this.pause();
+          for (var i=0; i<x; i++) {
+            this.queue(String(parseInt(x) + 1));
+          }
+          setTimeout(function() {
+            this.resume();
+          }.bind(this), maxDelay);
+        }, function() {
+          setTimeout(function() {
+            this.queue(null);
+          }.bind(this), maxDelay);
+        });
+
+        var source = Rx.Observable.from(input)
+        .map(x => x.toString())
+        .throughNodeStream(transformStream)
+        .map(x => parseInt(x.toString()))
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
+    });
+
+    describe('pass Observable through through2 transform stream', function() {
+      // NOTE: through2 uses a default highWaterMark of 16,
+      // so the input is 20 to be greater than 16.
+      let input = _.range(20);
+      let expected = input.reduce(function(acc, x) {
+        acc = acc.concat(_.fill(Array(x), x));
+        return acc;
+      }, []);
+      let maxDelay = 20;
+
+      it('should work when stream is fast', function(done) {
+        var source = Rx.Observable.from(input);
+
+        var slowTransformStream = through2.obj(function(x, enc, callback) {
+          var that = this;
+          for (var i=0; i<x; i++) {
+            that.push(x);
+          }
+          callback();
+        });
+
+        source
+        .throughNodeStream(slowTransformStream)
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
+      it('should work when stream is variably slow to complete', function(done) {
+        var source = Rx.Observable.from(input);
+
+        var slowTransformStream = through2.obj(function(x, enc, callback) {
+          var that = this;
+          for (var i=0; i<x; i++) {
+            that.push(x);
+          }
+          setTimeout(function() {
+            callback();
+          }, maxDelay / x);
+        });
+
+        source
+        .throughNodeStream(slowTransformStream)
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
+      it('should when stream is consistently slow to complete', function(done) {
+        var source = Rx.Observable.from(input);
+
+        var slowTransformStream = through2.obj(function(x, enc, callback) {
+          var that = this;
+          for (var i=0; i<x; i++) {
+            that.push(x);
+          }
+          setTimeout(function() {
+            callback();
+          }, maxDelay);
+        });
+
+        source
+        .throughNodeStream(slowTransformStream)
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
+      it('should when stream is variably slow to produce', function(done) {
+        var source = Rx.Observable.from(input);
+
+        var slowTransformStream = through2.obj(function(x, enc, callback) {
+          var that = this;
+          setTimeout(function() {
+            for (var i=0; i<x; i++) {
+              that.push(x);
+            }
+            callback();
+          }, maxDelay / x);
+        });
+
+        source
+        .throughNodeStream(slowTransformStream)
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
+      it('should when stream is consistently slow to produce', function(done) {
+        var source = Rx.Observable.from(input);
+
+        var slowTransformStream = through2.obj(function(x, enc, callback) {
+          var that = this;
+          setTimeout(function() {
+            for (var i=0; i<x; i++) {
+              that.push(x);
+            }
+            callback();
+          }, maxDelay);
+        });
+
+        source
+        .throughNodeStream(slowTransformStream)
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+        }, done, done);
+      });
+
     });
 
   });

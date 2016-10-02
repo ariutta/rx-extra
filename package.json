@@ -56,6 +56,7 @@
     "browserify": "^13.1.0",
     "chai": "^3.5.0",
     "csv-streamify": "^3.0.3",
+    "highland": "^2.10.0",
     "jsonstream": "^1.0.3",
     "loggin": "^3.0.1",
     "mkdirp": "^0.5.1",
@@ -63,6 +64,10 @@
     "npm-run-all": "^3.1.0",
     "npm-watch": "^0.1.6",
     "sinon": "^1.17.6",
+    "throttled-transform-stream": "^1.0.0",
+    "through": "^2.3.8",
+    "through2": "^2.0.1",
+    "to-transform": "^1.0.1",
     "tsify": "^1.0.7",
     "typescript": "^2.0.3"
   },
