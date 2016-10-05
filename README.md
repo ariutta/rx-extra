@@ -1,53 +1,88 @@
 # rx-extra
 
-`rx-extra` contains additional functionality not contained in the [rx](https://www.npmjs.com/package/rx) package, including:
+`rx-extra` contains additional functionality not contained in the [RxJS 5](https://github.com/ReactiveX/rxjs) library. If you want the older [RxJS 4](https://github.com/Reactive-Extensions/RxJS)-compatible version of `rx-extra`, see the [RxJS4 branch](https://github.com/ariutta/rx-extra/tree/RxJS4).
+
+## Install
+
+`npm install --save rx-extra`
 
 ## Methods
 
-### hierarchicalPartition
+TODO: decide on and implement a format for adding observables/operators, e.g.:
 ```js
-  var Rx = require('rx');
-  require('rx-extra/lib/hierarchical-partition')(Rx);
-  var evenOddPartition = Rx.Observable.range(1, 20)
+  import {Observable} from 'rxjs/Observable';
+  import 'rx-extra/add/observable/fromNodeReadableStream';
+  import 'rx-extra/add/operator/splitOnChange';
+```
+
+TODO: consider using [`lift`](https://github.com/ReactiveX/RxJS/blob/master/doc/operator-creation.md) instead of patching directly:
+
+> 2) Create your own Observable subclass and override lift to return it:
+
+
+### fromNodeReadableStream
+```js
+  import {Observable} from 'rxjs/Observable';
+  import 'rx-extra/add/observable/fromNodeReadableStream';
+  import 'rx-extra/add/operator/map';
+
+  Observable.fromNodeReadableStream(myStream)
+  .map(x => objectMode ? x : x.toString())
+  .subscribe(console.log, console.error);
+```
+
+### hierarchicalPartition
+TODO: decide whether to update this to `partitionNested`. Also, consider using `prime` or `init` instead of `replay`.
+```js
+  import {Observable} from 'rxjs/Observable';
+  import 'rxjs/add/observable/range';
+  import 'rx-extra/add/operator/hierarchicalPartition';
+  let [evenSource, oddSource] = Observable.range(1, 20)
   .hierarchicalPartition(function(value) {
     return value % 2 === 0;
   });
 
-  var multipleOfSixPartition = Rx.Observable.hierarchicalPartition(
+  let [multipleOfSixSource, notMultipleOfSixSource] = Observable.hierarchicalPartition(
       function(value) {
         return value % 3 === 0;
       },
-      evenOddPartition[0], // evenSource
-      evenOddPartition[1] // oddSource
+      evenSource,
+      oddSource
   );
-  var multipleOfSixSource = multipleOfSixPartition[0];
-  var notMultipleOfSixSource = multipleOfSixPartition[1];
 
   multipleOfSixSource
   .subscribe(console.log, console.error);
 ```
 
-### fromUnpauseableStream
+### partitionNested
 ```js
-  var Rx = require('rx');
-  require('rx-extra/lib/from-unpausable-stream.js')(Rx);
-  ...
-```
+  import {Observable} from 'rxjs/Observable';
+  import 'rxjs/add/observable/range';
+  import 'rx-extra/add/operator/partitionNested';
+  let partitioned = Observable.range(1, 20)
+  .partitionNested(function(value) {
+    return value % 2 === 0;
+  });
 
-### panWrap
-```js
-  var Rx = require('rx');
-  var RxNode = require('rx-node');
-  require('rx-extra/lib/pan-wrap.js')(Rx, RxNode);
-  ...
+  let [evenSource, oddSource] = partitioned;
 
+  let [multipleOfSixSource, notMultipleOfSixSource] = Observable.partitionNested(
+      partitioned,
+      function(value) {
+        return value % 3 === 0;
+      }
+  );
+
+  multipleOfSixSource
+  .subscribe(console.log, console.error);
 ```
 
 ### splitOnChange
 ```js
-  var Rx = require('rx');
-  require('rx-extra/lib/split-on-change.js')(Rx);
-  Rx.Observable.from([{
+  import {Observable} from 'rxjs/Observable';
+  import 'rxjs/add/observable/from';
+  import 'rx-extra/add/operator/splitOnChange';
+  Observable.from([{
     value: 5,
   }, {
     value: 5,
@@ -65,17 +100,58 @@
 
 ### then (Promise)
 ```js
-  var Rx = require('rx');
-  require('rx-extra/lib/then.js')(Rx);
-  Rx.Observable.range(1, 3)
+  import {Observable} from 'rxjs/Observable';
+  import 'rxjs/add/observable/range';
+  import 'rx-extra/add/operator/then';
+  Observable.range(1, 3)
   .then(console.log, console.error);
+```
+
+### throughNodeStream
+```js
+  import {Observable} from 'rxjs/Observable';
+  import 'rxjs/add/observable/range';
+  import 'rx-extra/add/operator/map';
+  import 'rx-extra/add/operator/throughNodeStream';
+  import * as through2 from 'through2';
+
+  Observable.range(1, 3)
+  .map(x => x.toString())
+  .throughNodeStream(through2.obj(function(x, enc, callback) {
+    var that = this;
+    for (var i=0; i<x; i++) {
+      that.push(x);
+    }
+    callback();
+  }))
+  .map(x => parseInt(x.toString()))
+  .subscribe(console.log, console.error);
+```
+
+If your transform stream has not set `objectMode: true`, you will need to handle
+any required conversion(s) between `String|Buffer` and `Number|Object`, e.g.:
+
+```js
+  Observable.range(1, 3)
+  .map(x => x.toString())
+  .throughNodeStream(through2(function(chunk, enc, callback) {
+    var that = this;
+    let x = parseInt(chunk.toString());
+    for (var i=0; i<x; i++) {
+      that.push(String(x + 1));
+    }
+    callback();
+  }))
+  .map(x => parseInt(x.toString()))
+  .subscribe(console.log, console.error);
 ```
 
 ### toNodeCallback
 ```js
-  var Rx = require('rx');
-  require('rx-extra/lib/to-node-callback.js')(Rx);
-  Rx.Observable.range(1, 3)
+  import {Observable} from 'rxjs/Observable';
+  import 'rxjs/add/observable/range';
+  import 'rx-extra/add/operator/toNodeCallback';
+  Observable.range(1, 3)
   .toNodeCallback(function(err, result) {
     if (err) {
       throw err;
@@ -83,5 +159,3 @@
     console.log(result);
   });
 ```
-
-

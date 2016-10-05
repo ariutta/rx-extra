@@ -89,7 +89,7 @@ function partitionNested(
 
 	thisArg = thisArg || this;
 
-  var source;
+  let source;
   let passFn;
   if (isArray(sourceOrPartition)) {
 		passFn = function(x, i, o) {
@@ -104,7 +104,7 @@ function partitionNested(
 	let passSource = source.filter(passFn);
 	let stopSource = source.filter(not(passFn, thisArg));
 
-  var resultPartition: PartitionResult = [
+  let resultPartition: PartitionResult = [
     passSource,
     stopSource
   ];
@@ -124,23 +124,22 @@ declare module 'rxjs/Observable' {
   namespace Observable {
     export let partitionNested;
   }
-//	export interface Observable<T> {
-//		//partitionNested<U>(f: (x: T, fn: Function, thisArg?: any) => U): [Observable<U>];
-//		partitionNested: any;
-//	}
+	export interface Observable<T> {
+		//partitionNested<U>(f: (x: T, fn: Function, thisArg?: any) => U): [Observable<U>];
+		partitionNested: any;
+	}
 }
 
 Observable.partitionNested = partitionNested;
 
-//Observable.prototype.partitionNested = function(
-//		sourceOrPartition: Observable<any>|PartitionResult,
-//		fn: Function,
-//		thisArg?: any): [Observable<any>] {
-//	var source = this;
-//	return source
-//		.let(function(o) {
-//			return partitionNested(sourceOrPartition, fn, thisArg);
-//		});
-//};
+Observable.prototype.partitionNested = function(
+		fn: Function,
+		thisArg?: any): PartitionResult {
+	let source = this;
+	return source
+		.let(function(o) {
+			return partitionNested(o, fn, thisArg);
+		});
+};
 
 export default partitionNested;

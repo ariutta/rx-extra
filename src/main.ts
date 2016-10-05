@@ -4,6 +4,7 @@ import * as Rx from 'rxjs/Rx';
 
 import './fromNodeReadableStream';
 import './hierarchicalPartition';
+import './partitionNested';
 import './splitOnChange';
 import './then';
 import './toNodeCallback';

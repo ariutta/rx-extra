@@ -7,36 +7,365 @@
 // http://stackoverflow.com/questions/36979451/
 //    using-marble-testing-rxjs5-method-inside-another-project
 
-var _ = require('lodash');
-var csv = require('csv-streamify');
-var expect = require('chai').expect;
-var hl = require('highland');
-var JSONStream = require('jsonstream');
-var Rx = require('../../index.js');
-var RxNode = Rx.RxNode;
-var sinon = require('sinon');
-var sologger = require('../sologger.js');
-var stream = require('stream');
-var ThrottledTransform = require('throttled-transform-stream').default;
-var through = require('through');
-var through2 = require('through2');
-var transform = require('to-transform');
+let _ = require('lodash');
+let csv = require('csv-streamify');
+let expect = require('chai').expect;
+let hl = require('highland');
+let JSONStream = require('jsonstream');
+let Rx = require('../../index.js');
+let RxNode = Rx.RxNode;
+let sinon = require('sinon');
+let sologger = require('../sologger.js');
+let stream = require('stream');
+let ThrottledTransform = require('throttled-transform-stream').default;
+let through = require('through');
+let through2 = require('through2');
+let transform = require('to-transform');
  
 // Run tests
 describe('Public API', function() {
 
+  describe('partitionNested', function() {
+    it('should work as Rx.Observable.partitionNested', function(done) {
+      let source = Rx.Observable.range(1, 20, Rx.Scheduler.asap);
+
+      let [evenSource, oddSource] = Rx.Observable.partitionNested(
+          source,
+          function(value) {
+            return value % 2 === 0;
+          }
+      );
+
+      evenSource
+      .toArray()
+      .do(function(actual) {
+        let expected = [
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+        ];
+        expect(actual).to.eql(expected);
+      })
+      .concat(
+        oddSource
+        .toArray()
+        .do(function(actual) {
+          let expected = [
+            1,
+            3,
+            5,
+            7,
+            9,
+            11,
+            13,
+            15,
+            17,
+            19,
+          ];
+          expect(actual).to.eql(expected);
+        }),
+        Rx.Scheduler.asap
+      )
+      .subscribe(null, done, done);
+    });
+
+    it('should work as Rx.Observable.prototype.partitionNested', function(done) {
+      let [evenSource, oddSource] = Rx.Observable.range(1, 20, Rx.Scheduler.asap)
+      .partitionNested(
+          function(value) {
+            return value % 2 === 0;
+          }
+      );
+
+      evenSource
+      .toArray()
+      .do(function(actual) {
+        let expected = [
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+        ];
+        expect(actual).to.eql(expected);
+      })
+      .concat(
+        oddSource
+        .toArray()
+        .do(function(actual) {
+          let expected = [
+            1,
+            3,
+            5,
+            7,
+            9,
+            11,
+            13,
+            15,
+            17,
+            19,
+          ];
+          expect(actual).to.eql(expected);
+        }),
+        Rx.Scheduler.asap
+      )
+      .subscribe(null, done, done);
+    });
+
+    it('should work as partitionNested().prototype.partitionNested()', function(done) {
+      let source = Rx.Observable.range(1, 20, Rx.Scheduler.asap);
+
+      let partitioned = Rx.Observable.partitionNested(
+          source,
+          x => x % 2 === 0
+      );
+
+      let [evenSource, oddSource] = partitioned;
+
+      let [multipleOfSixSource, notMultipleOfSixSource] = partitioned
+      .partitionNested(x => x % 3 === 0);
+
+      Rx.Observable.merge(
+          evenSource
+          .do(() => {}, done)
+          .toArray()
+          .do((evens) => {
+            expect(evens).to.eql(_.range(2, 21, 2));
+          }),
+          oddSource
+          .do(() => {}, done)
+          .toArray()
+          .do((odds) => {
+            expect(odds).to.eql(_.range(1, 20, 2));
+          }),
+          multipleOfSixSource
+          .toArray()
+          .do((multiplesOfSix) => {
+            expect(multiplesOfSix).to.eql(_.range(6, 20, 6));
+          }),
+          notMultipleOfSixSource
+          .toArray()
+          .do((notMultiplesOfSix) => {
+            expect(notMultiplesOfSix).to.eql(_.difference(_.range(1, 21), _.range(6, 20, 6)));
+          })
+      )
+      .subscribe(null, done, done);
+    });
+
+    it(['should work as partitionNested(), ',
+        'pause, ',
+        'partitionNested.prototype.partitionNested()'].join(''), function(done) {
+      let source = Rx.Observable.range(1, 20, Rx.Scheduler.asap);
+
+      let partitioned = Rx.Observable.partitionNested(
+          source,
+          x => x % 2 === 0
+      );
+
+      let [evenSource, oddSource] = partitioned;
+
+      Rx.Observable.merge(
+          evenSource
+          .do(() => {}, done)
+          .toArray()
+          .do((evens) => {
+            expect(evens).to.eql(_.range(2, 21, 2));
+          }),
+          oddSource
+          .do(() => {}, done)
+          .toArray()
+          .do((odds) => {
+            expect(odds).to.eql(_.range(1, 20, 2));
+          })
+      )
+      .subscribe(null, done);
+
+      setTimeout(function() {
+        let [multipleOfSixSource, notMultipleOfSixSource] = partitioned
+        .partitionNested(x => x % 3 === 0);
+
+        Rx.Observable.merge(
+            multipleOfSixSource
+            .toArray()
+            .do((multiplesOfSix) => {
+              expect(multiplesOfSix).to.eql(_.range(6, 20, 6));
+            }),
+            notMultipleOfSixSource
+            .toArray()
+            .do((notMultiplesOfSix) => {
+              expect(notMultiplesOfSix).to.eql(_.difference(_.range(1, 21), _.range(6, 20, 6)));
+            })
+        )
+        .subscribe(null, done, done);
+      }, 500);
+    });
+
+    it(['should work as Rx.Observable.prototype.partitionNested(), ',
+        'pause, ',
+        'partitioned.prototype.partitionNested()'].join(''), function(done) {
+      let partitioned = Rx.Observable.range(1, 20, Rx.Scheduler.asap)
+      .partitionNested(x => x % 2 === 0);
+
+      let [evenSource, oddSource] = partitioned;
+
+      Rx.Observable.merge(
+          evenSource
+          .do(() => {}, done)
+          .toArray()
+          .do((evens) => {
+            expect(evens).to.eql(_.range(2, 21, 2));
+          }),
+          oddSource
+          .do(() => {}, done)
+          .toArray()
+          .do((odds) => {
+            expect(odds).to.eql(_.range(1, 20, 2));
+          })
+      )
+      .subscribe(null, done);
+
+      setTimeout(function() {
+        let [multipleOfSixSource, notMultipleOfSixSource] = partitioned
+        .partitionNested(x => x % 3 === 0);
+
+        Rx.Observable.merge(
+            multipleOfSixSource
+            .toArray()
+            .do((multiplesOfSix) => {
+              expect(multiplesOfSix).to.eql(_.range(6, 20, 6));
+            }),
+            notMultipleOfSixSource
+            .toArray()
+            .do((notMultiplesOfSix) => {
+              expect(notMultiplesOfSix).to.eql(_.difference(_.range(1, 21), _.range(6, 20, 6)));
+            })
+        )
+        .subscribe(null, done, done);
+      }, 500);
+    });
+
+// TODO it's unclear whether replay is still needed
+//    it('should replay', function(done) {
+//
+//      let fastDelay = 200;
+//      let slowDelay = 500;
+//
+//      let source = Rx.Observable.from([{
+//        rating: 4,
+//        color: 'green'
+//      }, {
+//        rating: 4,
+//        color: 'red'
+//      }, {
+//        rating: 2,
+//        color: 'yellow'
+//      }, {
+//        rating: 3,
+//        color: 'red'
+//      }, {
+//        rating: 5,
+//        color: 'green'
+//      }, {
+//        rating: 4,
+//        color: 'yellow'
+//      }, {
+//        rating: 4,
+//        color: 'red'
+//      }])
+//      .delay(fastDelay);
+//
+//      let rated4PlusPartition = Rx.Observable.hierarchicalPartition(
+//          function(item) {
+//            return item.rating >= 4;
+//          },
+//          source
+//      );
+//      let rated4PlusSource = rated4PlusPartition[0];
+//      let ratedUnder4Source = rated4PlusPartition[1]
+//      .delay(fastDelay);
+//
+//      let redRated4PlusPartition = Rx.Observable.hierarchicalPartition(
+//          function(item) {
+//            return item.color === 'red';
+//          },
+//          rated4PlusSource,
+//          ratedUnder4Source
+//      );
+//
+//      let redRated4PlusSource = redRated4PlusPartition[0];
+//      let notRedOrRatedUnder4Source = redRated4PlusPartition[1];
+//
+//      setTimeout(function() {
+//        rated4PlusPartition.replay();
+//      }, slowDelay);
+//
+//      redRated4PlusSource
+//      .toArray()
+//      .do(function(actual) {
+//        let expected = [{
+//          rating: 4,
+//          color: 'red'
+//        }, {
+//          rating: 4,
+//          color: 'red'
+//        }];
+//
+//        expect(actual).to.eql(expected);
+//      })
+//      .concat(
+//          notRedOrRatedUnder4Source
+//          .toArray()
+//          .do(function(actual) {
+//            let expected = [{
+//              rating: 4,
+//              color: 'green'
+//            }, {
+//              rating: 5,
+//              color: 'green'
+//            }, {
+//              rating: 4,
+//              color: 'yellow'
+//            }, {
+//              rating: 2,
+//              color: 'yellow'
+//            }, {
+//              rating: 3,
+//              color: 'red'
+//            }];
+//            expect(actual).to.eql(expected);
+//          }),
+//          Rx.Scheduler.asap
+//      )
+//      .do(() => {}, done)
+//      .subscribe(null, null, done);
+//    });
+
+  });
+
   describe('hierarchicalPartition', function() {
     it('should work via non-chained call (Rx.Observable.hierarchicalPartition())', function(done) {
-      var source = Rx.Observable.range(1, 20, Rx.Scheduler.asap);
+      let source = Rx.Observable.range(1, 20, Rx.Scheduler.asap);
 
-      var [evenSource, oddSource] = Rx.Observable.hierarchicalPartition(
+      let [evenSource, oddSource] = Rx.Observable.hierarchicalPartition(
           function(value) {
             return value % 2 === 0;
           },
           source
       );
 
-      var [multipleOfSixSource, notMultipleOfSixSource] = Rx.Observable.hierarchicalPartition(
+      let [multipleOfSixSource, notMultipleOfSixSource] = Rx.Observable.hierarchicalPartition(
           function(value) {
             return value % 3 === 0;
           },
@@ -47,7 +376,7 @@ describe('Public API', function() {
       multipleOfSixSource
       .toArray()
       .do(function(actual) {
-        var expected = [
+        let expected = [
           6,
           12,
           18
@@ -58,7 +387,7 @@ describe('Public API', function() {
         notMultipleOfSixSource
         .toArray()
         .do(function(actual) {
-          var expected = [
+          let expected = [
             1,
             2,
             3,
@@ -87,10 +416,10 @@ describe('Public API', function() {
 
     it('should replay', function(done) {
 
-      var fastDelay = 200;
-      var slowDelay = 500;
+      let fastDelay = 200;
+      let slowDelay = 500;
 
-      var source = Rx.Observable.from([{
+      let source = Rx.Observable.from([{
         rating: 4,
         color: 'green'
       }, {
@@ -114,17 +443,17 @@ describe('Public API', function() {
       }])
       .delay(fastDelay);
 
-      var rated4PlusPartition = Rx.Observable.hierarchicalPartition(
+      let rated4PlusPartition = Rx.Observable.hierarchicalPartition(
           function(item) {
             return item.rating >= 4;
           },
           source
       );
-      var rated4PlusSource = rated4PlusPartition[0];
-      var ratedUnder4Source = rated4PlusPartition[1]
+      let rated4PlusSource = rated4PlusPartition[0];
+      let ratedUnder4Source = rated4PlusPartition[1]
       .delay(fastDelay);
 
-      var redRated4PlusPartition = Rx.Observable.hierarchicalPartition(
+      let redRated4PlusPartition = Rx.Observable.hierarchicalPartition(
           function(item) {
             return item.color === 'red';
           },
@@ -132,8 +461,8 @@ describe('Public API', function() {
           ratedUnder4Source
       );
 
-      var redRated4PlusSource = redRated4PlusPartition[0];
-      var notRedOrRatedUnder4Source = redRated4PlusPartition[1];
+      let redRated4PlusSource = redRated4PlusPartition[0];
+      let notRedOrRatedUnder4Source = redRated4PlusPartition[1];
 
       setTimeout(function() {
         rated4PlusPartition.replay();
@@ -142,7 +471,7 @@ describe('Public API', function() {
       redRated4PlusSource
       .toArray()
       .do(function(actual) {
-        var expected = [{
+        let expected = [{
           rating: 4,
           color: 'red'
         }, {
@@ -156,7 +485,7 @@ describe('Public API', function() {
           notRedOrRatedUnder4Source
           .toArray()
           .do(function(actual) {
-            var expected = [{
+            let expected = [{
               rating: 4,
               color: 'green'
             }, {
@@ -181,12 +510,12 @@ describe('Public API', function() {
     });
 
     it('should work as prototype', function(done) {
-      var [evenSource, oddSource] = Rx.Observable.range(1, 20, Rx.Scheduler.asap)
+      let [evenSource, oddSource] = Rx.Observable.range(1, 20, Rx.Scheduler.asap)
       .hierarchicalPartition(function(value) {
         return value % 2 === 0;
       });
 
-      var [multipleOfSixSource, notMultipleOfSixSource] = Rx.Observable.hierarchicalPartition(
+      let [multipleOfSixSource, notMultipleOfSixSource] = Rx.Observable.hierarchicalPartition(
           function(value) {
             return value % 3 === 0;
           },
@@ -198,7 +527,7 @@ describe('Public API', function() {
       .takeUntil(Rx.Observable.timer(5, 5, Rx.Scheduler.asap))
       .toArray()
       .do(function(actual) {
-        var expected = [
+        let expected = [
           6,
           12,
           18
@@ -210,7 +539,7 @@ describe('Public API', function() {
           .takeUntil(Rx.Observable.timer(5, 5, Rx.Scheduler.asap))
           .toArray()
           .do(function(actual) {
-            var expected = [
+            let expected = [
               1,
               2,
               3,
@@ -250,7 +579,7 @@ describe('Public API', function() {
     });
 
     it('should work on error', function(done) {
-      var message = 'placeholder error';
+      let message = 'placeholder error';
       Rx.Observable.range(1, 3, Rx.Scheduler.asap)
       .concat(Rx.Observable.throw(new Error(message)))
       .then(function(result) {
@@ -273,7 +602,7 @@ describe('Public API', function() {
     });
 
     it('should work on error', function(done) {
-      var message = 'placeholder error';
+      let message = 'placeholder error';
       Rx.Observable.range(1, 3, Rx.Scheduler.asap)
       .concat(Rx.Observable.throw(new Error(message)))
       .toNodeCallback(function(err, result) {
@@ -288,14 +617,14 @@ describe('Public API', function() {
 
     describe('multiple elements in source, no reversion', function() {
 
-      var expected = [
+      let expected = [
         'abcd',
         'efg',
         'hi'
       ];
 
       describe('function as keySelector', function() {
-        var source = Rx.Observable.from([{
+        let source = Rx.Observable.from([{
           id: 2,
           name: 'a'
         }, {
@@ -325,7 +654,7 @@ describe('Public API', function() {
         }])
         .publishReplay().refCount();
 
-        var keySelector = function(groupItem) {
+        let keySelector = function(groupItem) {
           return groupItem.id;
         };
 
@@ -364,7 +693,7 @@ describe('Public API', function() {
       });
 
       describe('string as keySelector', function() {
-        var source = Rx.Observable.from([{
+        let source = Rx.Observable.from([{
           id: 2,
           name: 'a'
         }, {
@@ -394,7 +723,7 @@ describe('Public API', function() {
         }])
         .publishReplay().refCount();
 
-        var keySelector = 'id';
+        let keySelector = 'id';
 
         it('should run as Rx.Observable.METHOD', function(done) {
           Rx.Observable.splitOnChange(source, keySelector)
@@ -431,7 +760,7 @@ describe('Public API', function() {
       });
 
       describe('no keySelector', function() {
-        var sourceForNoKeySelector = Rx.Observable.from([
+        let sourceForNoKeySelector = Rx.Observable.from([
           'a',
           'a',
           'a',
@@ -443,7 +772,7 @@ describe('Public API', function() {
         ])
         .publishReplay().refCount();
 
-        var expectedForNoKeySelector = [
+        let expectedForNoKeySelector = [
           'aaa',
           'bb',
           'cc',
@@ -481,7 +810,7 @@ describe('Public API', function() {
 
     describe('multiple elements in source, with reversion', function() {
 
-      var sourceForFnAndString = Rx.Observable.from([{
+      let sourceForFnAndString = Rx.Observable.from([{
         id: 2,
         name: 'a'
       }, {
@@ -517,7 +846,7 @@ describe('Public API', function() {
       }])
         .publishReplay().refCount();
 
-      var expectedForFnAndString = [
+      let expectedForFnAndString = [
         'abcd',
         'ef',
         'cd',
@@ -527,7 +856,7 @@ describe('Public API', function() {
 
       describe('function as keySelector', function() {
 
-        var keySelector = function(groupItem) {
+        let keySelector = function(groupItem) {
           return groupItem.id;
         };
 
@@ -566,7 +895,7 @@ describe('Public API', function() {
       });
 
       describe('string as keySelector', function() {
-        var keySelector = 'id';
+        let keySelector = 'id';
 
         it('should run as Rx.Observable.METHOD', function(done) {
           Rx.Observable.splitOnChange(sourceForFnAndString, keySelector)
@@ -603,7 +932,7 @@ describe('Public API', function() {
       });
 
       describe('no keySelector', function() {
-        var sourceForNoKeySelector = Rx.Observable.from([
+        let sourceForNoKeySelector = Rx.Observable.from([
           'a',
           'a',
           'a',
@@ -616,7 +945,7 @@ describe('Public API', function() {
         ])
         .publishReplay().refCount();
 
-        var expectedForNoKeySelector = [
+        let expectedForNoKeySelector = [
           'aaa',
           'b',
           'a',
@@ -655,18 +984,18 @@ describe('Public API', function() {
     });
 
     describe('one element in source', function() {
-      var expected = [
+      let expected = [
         'a',
       ];
 
       describe('function as keySelector', function() {
-        var source = Rx.Observable.from([{
+        let source = Rx.Observable.from([{
           id: 2,
           name: 'a'
         }])
         .publishReplay().refCount();
 
-        var keySelector = function(groupItem) {
+        let keySelector = function(groupItem) {
           return groupItem.id;
         };
 
@@ -705,7 +1034,7 @@ describe('Public API', function() {
       });
 
       describe('no keySelector', function() {
-        var source = Rx.Observable.from([
+        let source = Rx.Observable.from([
           'a',
         ])
         .publishReplay().refCount();
@@ -740,13 +1069,13 @@ describe('Public API', function() {
       });
 
       describe('string as keySelector', function() {
-        var source = Rx.Observable.from([{
+        let source = Rx.Observable.from([{
           id: 2,
           name: 'a'
         }])
         .publishReplay().refCount();
 
-        var keySelector = 'id';
+        let keySelector = 'id';
 
         it('should run as Rx.Observable.METHOD', function(done) {
           Rx.Observable.splitOnChange(source, keySelector)
@@ -794,7 +1123,7 @@ describe('Public API', function() {
          pauseable: ${pauseable})`;
     
       it(msg, function(done) {
-        var s = new stream.Readable({objectMode: objectMode});
+        let s = new stream.Readable({objectMode: objectMode});
         s._read = function noop() {};
         s.pause = pauseable ? s.pause : undefined;
 
@@ -812,7 +1141,7 @@ describe('Public API', function() {
       });
     };
 
-    var inputs = [
+    let inputs = [
       [1],
       [1, 2, 3],
       [1, 2],
@@ -832,8 +1161,8 @@ describe('Public API', function() {
       [{'a': 1, 'b': 2}, {'a': 1, 'b': 2}],
       [{'a': 1, 'b': 2}, {'c': 3, 'b': 2}, {'y': 'why', 'b': 2}, {'d': true, 'b': 2}],
     ];
-    var objectModes = [true, false];
-    var pauseables = [true, false];
+    let objectModes = [true, false];
+    let pauseables = [true, false];
 
     inputs.forEach(function(input) {
       objectModes
@@ -852,10 +1181,10 @@ describe('Public API', function() {
 
   describe('Rx.Observable.prototype.throughNodeStream', function() {
     it('should convert a pausable stream to Observable (json)', function(done) {
-      var s = new stream.Readable();
+      let s = new stream.Readable();
       s._read = function noop() {};
 
-      var source = Rx.Observable.fromNodeReadableStream(s);
+      let source = Rx.Observable.fromNodeReadableStream(s);
 
       source
       .throughNodeStream(JSONStream.parse('a'))
@@ -869,12 +1198,12 @@ describe('Public API', function() {
 
     it(['should convert an unpausable stream to an Observable that works with ',
         'throughNodeStream (input: json object)'].join(''), function(done) {
-      //var s = new stream.Readable({objectMode: true});
-      var s = new stream.Readable();
+      //let s = new stream.Readable({objectMode: true});
+      let s = new stream.Readable();
       s._read = function noop() {};
       s.pause = undefined;
 
-      var source = Rx.Observable.fromNodeReadableStream(s);
+      let source = Rx.Observable.fromNodeReadableStream(s);
 
       source
       .throughNodeStream(JSONStream.parse('a'))
@@ -888,11 +1217,11 @@ describe('Public API', function() {
 
     it(['should convert a pausable stream to an Observable ',
         '(input: csv stream, objectMode: true)'].join(''), function(done) {
-      //var s = new stream.Readable({objectMode: true});
-      var s = new stream.Readable();
+      //let s = new stream.Readable({objectMode: true});
+      let s = new stream.Readable();
       s._read = function noop() {};
 
-      var source = Rx.Observable.fromNodeReadableStream(s);
+      let source = Rx.Observable.fromNodeReadableStream(s);
 
       source
       .throughNodeStream(csv({objectMode: true, delimiter: '\t'}))
@@ -913,11 +1242,11 @@ describe('Public API', function() {
 
     it(['should convert an unpausable stream to an Observable ',
         '(input: csv stream)'].join(''), function(done) {
-      //var s = new stream.Readable({objectMode: true});
-      var s = new stream.Readable();
+      //let s = new stream.Readable({objectMode: true});
+      let s = new stream.Readable();
       s._read = function noop() {};
 
-      var source = Rx.Observable.fromNodeReadableStream(s);
+      let source = Rx.Observable.fromNodeReadableStream(s);
 
       source
       .throughNodeStream(csv({delimiter: '\t'}))
@@ -941,11 +1270,11 @@ describe('Public API', function() {
 
     it(['should convert an unpausable stream to an Observable ',
         '(input: single element [an integer], objectMode: true)'].join(''), function(done) {
-      var s = new stream.Readable({objectMode: true});
+      let s = new stream.Readable({objectMode: true});
       s._read = function noop() {};
       s.pause = undefined;
 
-      var source = Rx.Observable.fromNodeReadableStream(s);
+      let source = Rx.Observable.fromNodeReadableStream(s);
 
       source
       .subscribe(function(actual) {
@@ -958,11 +1287,11 @@ describe('Public API', function() {
 
     it('should convert an unpausable stream to an Observable',
     function(done) {
-      var s = new stream.Readable({objectMode: true});
+      let s = new stream.Readable({objectMode: true});
       s._read = function noop() {};
       s.pause = undefined;
 
-      var source = Rx.Observable.fromNodeReadableStream(s);
+      let source = Rx.Observable.fromNodeReadableStream(s);
 
       source
       .toArray()
@@ -978,7 +1307,7 @@ describe('Public API', function() {
 
     it(['should convert an unpausable stream to an Observable that ',
         'works with hierarchicalPartition'].join(''), function(done) {
-      var s = new stream.Readable({objectMode: true});
+      let s = new stream.Readable({objectMode: true});
       s._read = function noop() {};
       s.pause = undefined;
 
@@ -998,7 +1327,7 @@ describe('Public API', function() {
     });
 
     it('should convert readable stream to Observable', function(done) {
-      var s = new stream.Readable({objectMode: true});
+      let s = new stream.Readable({objectMode: true});
       s._read = function noop() {};
 
       Rx.Observable.fromNodeReadableStream(s)
@@ -1015,7 +1344,7 @@ describe('Public API', function() {
 
     it(['should convert a pausable stream to an Observable that ',
         'works with hierarchicalPartition'].join(''), function(done) {
-      var s = new stream.Readable({objectMode: true});
+      let s = new stream.Readable({objectMode: true});
       s._read = function noop() {};
 
       Rx.Observable.fromNodeReadableStream(s)
@@ -1041,7 +1370,7 @@ describe('Public API', function() {
         }, 100);
       });
 
-      var source = Rx.Observable.from(input)
+      let source = Rx.Observable.from(input)
       .map(x => x.toString())
       .throughNodeStream(new SlowTransformStream())
       .map(x => parseInt(x.toString()))
@@ -1053,14 +1382,14 @@ describe('Public API', function() {
 
     it('should run Observable through slow "to-transform" transform stream', function(done) {
       let input = _.range(20);
-      var TransformStream = transform((x, done) => {
+      let TransformStream = transform((x, done) => {
         setTimeout(function() {
           let output = String(parseInt(x) + 1);
           done(null, output);
         }, 50);
       });
 
-      var source = Rx.Observable.from(input)
+      let source = Rx.Observable.from(input)
       .map(x => x.toString())
       .throughNodeStream(new TransformStream())
       .map(x => parseInt(x.toString()))
@@ -1079,9 +1408,9 @@ describe('Public API', function() {
       let maxDelay = 20;
 
       it('should work when stream is fast', function(done) {
-        var source = Rx.Observable.from(input);
+        let source = Rx.Observable.from(input);
 
-        var transformStream = hl.pipeline(function (s) {
+        let transformStream = hl.pipeline(function (s) {
           return s.consume(function(err, x, push, next) {
             if (err) {
               // pass errors along the stream and consume next value
@@ -1091,7 +1420,7 @@ describe('Public API', function() {
               // pass nil (end event) along the stream
               push(null, x);
             } else {
-              for (var i=0; i<x; i++) {
+              for (let i=0; i<x; i++) {
                 push(null, x);
               }
               next();
@@ -1108,9 +1437,9 @@ describe('Public API', function() {
       });
 
       it('should work when stream is variably slow to complete', function(done) {
-        var source = Rx.Observable.from(input);
+        let source = Rx.Observable.from(input);
 
-        var transformStream = hl.pipeline(function (s) {
+        let transformStream = hl.pipeline(function (s) {
           return s.consume(function(err, x, push, next) {
             if (err) {
               // pass errors along the stream and consume next value
@@ -1122,7 +1451,7 @@ describe('Public API', function() {
                 push(null, x);
               }, 21);
             } else {
-              for (var i=0; i<x; i++) {
+              for (let i=0; i<x; i++) {
                 push(null, x);
               }
               setTimeout(function() {
@@ -1141,7 +1470,7 @@ describe('Public API', function() {
       });
 
       it('should work when stream is consistently slow to complete', function(done) {
-        var transformStream = hl.pipeline(function (s) {
+        let transformStream = hl.pipeline(function (s) {
           return s.consume(function(err, x, push, next) {
             if (err) {
               // pass errors along the stream and consume next value
@@ -1153,7 +1482,7 @@ describe('Public API', function() {
                 push(null, x);
               }, maxDelay);
             } else {
-              for (var i=0; i<x; i++) {
+              for (let i=0; i<x; i++) {
                 push(null, x);
               }
               setTimeout(function() {
@@ -1163,7 +1492,7 @@ describe('Public API', function() {
           });
         });
 
-        var source = Rx.Observable.from(input)
+        let source = Rx.Observable.from(input)
         .throughNodeStream(transformStream)
         .toArray()
         .subscribe(function(actual) {
@@ -1172,7 +1501,7 @@ describe('Public API', function() {
       });
 
       it('should work when stream is variably slow to produce', function(done) {
-        var transformStream = hl.pipeline(function (s) {
+        let transformStream = hl.pipeline(function (s) {
           return s.consume(function(err, x, push, next) {
             if (err) {
               // pass errors along the stream and consume next value
@@ -1185,7 +1514,7 @@ describe('Public API', function() {
               }, maxDelay);
             } else {
               setTimeout(function() {
-                for (var i=0; i<x; i++) {
+                for (let i=0; i<x; i++) {
                   push(null, x);
                 }
                 next();
@@ -1194,7 +1523,7 @@ describe('Public API', function() {
           });
         });
 
-        var source = Rx.Observable.from(input)
+        let source = Rx.Observable.from(input)
         .throughNodeStream(transformStream)
         .toArray()
         .subscribe(function(actual) {
@@ -1203,7 +1532,7 @@ describe('Public API', function() {
       });
 
       it('should work when stream is consistently slow to produce', function(done) {
-        var transformStream = hl.pipeline(function (s) {
+        let transformStream = hl.pipeline(function (s) {
           return s.consume(function(err, x, push, next) {
             if (err) {
               // pass errors along the stream and consume next value
@@ -1216,7 +1545,7 @@ describe('Public API', function() {
               }, maxDelay);
             } else {
               setTimeout(function() {
-                for (var i=0; i<x; i++) {
+                for (let i=0; i<x; i++) {
                   push(null, x);
                 }
                 next();
@@ -1247,14 +1576,14 @@ describe('Public API', function() {
         // NOTE: "through" uses "push" as an alias for "queue"
         // NOTE: when "end" function is not defined,
         //   "through" default is "function () { this.queue(null) }"
-        var transformStream = through(function write(x) {
-          var that = this;
-          for (var i=0; i<x; i++) {
+        let transformStream = through(function write(x) {
+          let that = this;
+          for (let i=0; i<x; i++) {
             that.queue(String(parseInt(x) + 1));
           }
         });
 
-        var source = Rx.Observable.from(input)
+        let source = Rx.Observable.from(input)
         .map(x => x.toString())
         .throughNodeStream(transformStream)
         .map(x => parseInt(x.toString()))
@@ -1265,10 +1594,10 @@ describe('Public API', function() {
       });
 
       it('should work when stream is variably slow to produce', function(done) {
-        var transformStream = through(function write(x) {
+        let transformStream = through(function write(x) {
           this.pause();
           setTimeout(function() {
-            for (var i=0; i<x; i++) {
+            for (let i=0; i<x; i++) {
               this.queue(String(parseInt(x) + 1));
             }
             this.resume();
@@ -1279,7 +1608,7 @@ describe('Public API', function() {
           }.bind(this), maxDelay);
         });
 
-        var source = Rx.Observable.from(input)
+        let source = Rx.Observable.from(input)
         .map(x => x.toString())
         .throughNodeStream(transformStream)
         .map(x => parseInt(x.toString()))
@@ -1290,10 +1619,10 @@ describe('Public API', function() {
       });
 
       it('should work when stream is consistently slow to produce', function(done) {
-        var transformStream = through(function write(x) {
+        let transformStream = through(function write(x) {
           this.pause();
           setTimeout(function() {
-            for (var i=0; i<x; i++) {
+            for (let i=0; i<x; i++) {
               this.queue(String(parseInt(x) + 1));
             }
             this.resume();
@@ -1304,7 +1633,7 @@ describe('Public API', function() {
           }.bind(this), maxDelay);
         });
 
-        var source = Rx.Observable.from(input)
+        let source = Rx.Observable.from(input)
         .map(x => x.toString())
         .throughNodeStream(transformStream)
         .map(x => parseInt(x.toString()))
@@ -1315,9 +1644,9 @@ describe('Public API', function() {
       });
 
       it('should work when stream is variably slow to complete', function(done) {
-        var transformStream = through(function write(x) {
+        let transformStream = through(function write(x) {
           this.pause();
-          for (var i=0; i<x; i++) {
+          for (let i=0; i<x; i++) {
             this.queue(String(parseInt(x) + 1));
           }
           setTimeout(function() {
@@ -1329,7 +1658,7 @@ describe('Public API', function() {
           }.bind(this), maxDelay);
         });
 
-        var source = Rx.Observable.from(input)
+        let source = Rx.Observable.from(input)
         .map(x => x.toString())
         .throughNodeStream(transformStream)
         .map(x => parseInt(x.toString()))
@@ -1340,9 +1669,9 @@ describe('Public API', function() {
       });
 
       it('should work when stream is slow to complete', function(done) {
-        var transformStream = through(function write(x) {
+        let transformStream = through(function write(x) {
           this.pause();
-          for (var i=0; i<x; i++) {
+          for (let i=0; i<x; i++) {
             this.queue(String(parseInt(x) + 1));
           }
           setTimeout(function() {
@@ -1354,7 +1683,7 @@ describe('Public API', function() {
           }.bind(this), maxDelay);
         });
 
-        var source = Rx.Observable.from(input)
+        let source = Rx.Observable.from(input)
         .map(x => x.toString())
         .throughNodeStream(transformStream)
         .map(x => parseInt(x.toString()))
@@ -1377,11 +1706,11 @@ describe('Public API', function() {
       let maxDelay = 20;
 
       it('should work when stream is fast', function(done) {
-        var source = Rx.Observable.from(input);
+        let source = Rx.Observable.from(input);
 
-        var slowTransformStream = through2.obj(function(x, enc, callback) {
-          var that = this;
-          for (var i=0; i<x; i++) {
+        let slowTransformStream = through2.obj(function(x, enc, callback) {
+          let that = this;
+          for (let i=0; i<x; i++) {
             that.push(x);
           }
           callback();
@@ -1396,11 +1725,11 @@ describe('Public API', function() {
       });
 
       it('should work when stream is variably slow to complete', function(done) {
-        var source = Rx.Observable.from(input);
+        let source = Rx.Observable.from(input);
 
-        var slowTransformStream = through2.obj(function(x, enc, callback) {
-          var that = this;
-          for (var i=0; i<x; i++) {
+        let slowTransformStream = through2.obj(function(x, enc, callback) {
+          let that = this;
+          for (let i=0; i<x; i++) {
             that.push(x);
           }
           setTimeout(function() {
@@ -1417,11 +1746,11 @@ describe('Public API', function() {
       });
 
       it('should when stream is consistently slow to complete', function(done) {
-        var source = Rx.Observable.from(input);
+        let source = Rx.Observable.from(input);
 
-        var slowTransformStream = through2.obj(function(x, enc, callback) {
-          var that = this;
-          for (var i=0; i<x; i++) {
+        let slowTransformStream = through2.obj(function(x, enc, callback) {
+          let that = this;
+          for (let i=0; i<x; i++) {
             that.push(x);
           }
           setTimeout(function() {
@@ -1438,12 +1767,12 @@ describe('Public API', function() {
       });
 
       it('should when stream is variably slow to produce', function(done) {
-        var source = Rx.Observable.from(input);
+        let source = Rx.Observable.from(input);
 
-        var slowTransformStream = through2.obj(function(x, enc, callback) {
-          var that = this;
+        let slowTransformStream = through2.obj(function(x, enc, callback) {
+          let that = this;
           setTimeout(function() {
-            for (var i=0; i<x; i++) {
+            for (let i=0; i<x; i++) {
               that.push(x);
             }
             callback();
@@ -1459,12 +1788,12 @@ describe('Public API', function() {
       });
 
       it('should when stream is consistently slow to produce', function(done) {
-        var source = Rx.Observable.from(input);
+        let source = Rx.Observable.from(input);
 
-        var slowTransformStream = through2.obj(function(x, enc, callback) {
-          var that = this;
+        let slowTransformStream = through2.obj(function(x, enc, callback) {
+          let that = this;
           setTimeout(function() {
-            for (var i=0; i<x; i++) {
+            for (let i=0; i<x; i++) {
               that.push(x);
             }
             callback();
