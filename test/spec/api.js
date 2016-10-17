@@ -26,64 +26,67 @@ let transform = require('to-transform');
 describe('Public API', function() {
 
   describe('partitionNested', function() {
-    it('should work as Rx.Observable.partitionNested', function(done) {
-      let source = Rx.Observable.range(1, 20, Rx.Scheduler.asap);
 
-      let [evenSource, oddSource] = Rx.Observable.partitionNested(
-          source,
-          function(value) {
-            return value % 2 === 0;
+    it('should work for kaavio example', function(done) {
+      let vm = {};
+      let typeMappingsEntityReferenceToEntity =
+          vm.typeMappingsEntityReferenceToEntity = {
+            'biopax:Complex': 'biopax:Complex',
+            'gpml:GeneProduct': 'gpml:GeneProduct',
+            'biopax:SmallMoleculeReference': 'gpml:Metabolite',
+            'biopax:Pathway': 'biopax:Pathway',
+            'biopax:ProteinReference': 'biopax:Protein',
+            'biopax:RnaReference': 'biopax:Rna',
+            'gpml:Unknown': 'gpml:Unknown',
+          };
+
+      let typeMappingsEntityToEntityReference =
+          vm.typeMappingsEntityToEntityReference =
+          _.invert(typeMappingsEntityReferenceToEntity);
+
+      let editableElementTypes = _.keys(typeMappingsEntityToEntityReference);
+
+      let editorTabsComponent = {
+        vm: {
+          pvjsElementPartition: Rx.Observable.from([
+                                  { type: 'Metabolite' },
+                                  {},
+                                  { type: 'Mitochondria' },
+                                  { type: 'GeneProduct' },
+                                  { type: 'Protein' },
+                                ], Rx.Scheduler.asap)
+                                .partitionNested(x => x.hasOwnProperty('type'))
+        }
+      };
+
+      let childComponentPartition = editorTabsComponent.vm.pvjsElementPartition
+      .partitionNested(
+          function(pvjsElement) {
+            let pvjsElementType = _.isArray(pvjsElement.type) ?
+              pvjsElement.type : [pvjsElement.type];
+            let result = !_.isEmpty(_.intersection(pvjsElementType, editableElementTypes));
+            return result;
           }
       );
 
-      evenSource
-      .toArray()
-      .do(function(actual) {
-        let expected = [
-          2,
-          4,
-          6,
-          8,
-          10,
-          12,
-          14,
-          16,
-          18,
-          20,
-        ];
-        expect(actual).to.eql(expected);
-      })
-      .concat(
-        oddSource
-        .toArray()
-        .do(function(actual) {
-          let expected = [
-            1,
-            3,
-            5,
-            7,
-            9,
-            11,
-            13,
-            15,
-            17,
-            19,
-          ];
-          expect(actual).to.eql(expected);
-        }),
-        Rx.Scheduler.asap
+      Rx.Observable.merge.apply(
+          this,
+          childComponentPartition
       )
       .subscribe(null, done, done);
     });
 
-    it('should work as Rx.Observable.prototype.partitionNested', function(done) {
-      let [evenSource, oddSource] = Rx.Observable.range(1, 20, Rx.Scheduler.asap)
+    it('should work one level deep', function(done) {
+      let evenOddPartition = Rx.Observable.range(1, 20, Rx.Scheduler.asap)
       .partitionNested(
           function(value) {
             return value % 2 === 0;
           }
       );
 
+      let evenSource = evenOddPartition[0];
+      let oddSource = evenOddPartition[1];
+
       evenSource
       .toArray()
       .do(function(actual) {
@@ -124,92 +127,121 @@ describe('Public API', function() {
       .subscribe(null, done, done);
     });
 
-    it('should work as partitionNested().prototype.partitionNested()', function(done) {
-      let source = Rx.Observable.range(1, 20, Rx.Scheduler.asap);
-
-      let partitioned = Rx.Observable.partitionNested(
-          source,
-          x => x % 2 === 0
+    it('should work two levels deep', function(done) {
+      let multipleOfSixPartition = Rx.Observable.range(1, 20, Rx.Scheduler.asap)
+      .partitionNested(
+          function(value) {
+            return value % 2 === 0;
+          }
+      )
+      .partitionNested(
+          function(value) {
+            return value % 3 === 0;
+          }
       );
 
-      let [evenSource, oddSource] = partitioned;
+      let isMultipleOfSixSource = multipleOfSixPartition[0];
+      let notMultipleOfSixSource = multipleOfSixPartition[1];
 
-      let [multipleOfSixSource, notMultipleOfSixSource] = partitioned
-      .partitionNested(x => x % 3 === 0);
-
-      Rx.Observable.merge(
-          evenSource
-          .do(() => {}, done)
-          .toArray()
-          .do((evens) => {
-            expect(evens).to.eql(_.range(2, 21, 2));
-          }),
-          oddSource
-          .do(() => {}, done)
-          .toArray()
-          .do((odds) => {
-            expect(odds).to.eql(_.range(1, 20, 2));
-          }),
-          multipleOfSixSource
-          .toArray()
-          .do((multiplesOfSix) => {
-            expect(multiplesOfSix).to.eql(_.range(6, 20, 6));
-          }),
-          notMultipleOfSixSource
-          .toArray()
-          .do((notMultiplesOfSix) => {
-            expect(notMultiplesOfSix).to.eql(_.difference(_.range(1, 21), _.range(6, 20, 6)));
-          })
+      isMultipleOfSixSource
+      .toArray()
+      .do(function(actual) {
+        let expected = [
+          6,
+          12,
+          18,
+        ];
+        expect(actual).to.eql(expected);
+      })
+      .concat(
+        notMultipleOfSixSource
+        .toArray()
+        .do(function(actual) {
+          let expected = [
+            1,
+            2,
+            3,
+            4,
+            5,
+            7,
+            8,
+            9,
+            10,
+            11,
+            13,
+            14,
+            15,
+            16,
+            17,
+            19,
+            20,
+          ];
+          expect(actual).to.eql(expected);
+        }),
+        Rx.Scheduler.asap
       )
       .subscribe(null, done, done);
     });
 
-    it(['should work as partitionNested(), ',
-        'pause, ',
-        'partitionNested.prototype.partitionNested()'].join(''), function(done) {
-      let source = Rx.Observable.range(1, 20, Rx.Scheduler.asap);
-
-      let partitioned = Rx.Observable.partitionNested(
-          source,
-          x => x % 2 === 0
+    it('should work three levels deep', function(done) {
+      let multipleOfTwelvePartition = Rx.Observable.range(1, 20, Rx.Scheduler.asap)
+      .partitionNested(
+          function(value) {
+            return value % 2 === 0;
+          }
+      )
+      .partitionNested(
+          function(value) {
+            return value % 3 === 0;
+          }
+      )
+      .partitionNested(
+          function(value) {
+            return value % 4 === 0;
+          }
       );
 
-      let [evenSource, oddSource] = partitioned;
+      let isMultipleOfTwelveSource = multipleOfTwelvePartition[0];
+      let notMultipleOfTwelveSource = multipleOfTwelvePartition[1];
 
-      Rx.Observable.merge(
-          evenSource
-          .do(() => {}, done)
-          .toArray()
-          .do((evens) => {
-            expect(evens).to.eql(_.range(2, 21, 2));
-          }),
-          oddSource
-          .do(() => {}, done)
-          .toArray()
-          .do((odds) => {
-            expect(odds).to.eql(_.range(1, 20, 2));
-          })
+      isMultipleOfTwelveSource
+      .toArray()
+      .do(function(actual) {
+        let expected = [
+          12,
+        ];
+        expect(actual).to.eql(expected);
+      })
+      .concat(
+        notMultipleOfTwelveSource
+        .toArray()
+        .do(function(actual) {
+          let expected = [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+          ];
+          expect(actual).to.eql(expected);
+        }),
+        Rx.Scheduler.asap
       )
-      .subscribe(null, done);
-
-      setTimeout(function() {
-        let [multipleOfSixSource, notMultipleOfSixSource] = partitioned
-        .partitionNested(x => x % 3 === 0);
-
-        Rx.Observable.merge(
-            multipleOfSixSource
-            .toArray()
-            .do((multiplesOfSix) => {
-              expect(multiplesOfSix).to.eql(_.range(6, 20, 6));
-            }),
-            notMultipleOfSixSource
-            .toArray()
-            .do((notMultiplesOfSix) => {
-              expect(notMultiplesOfSix).to.eql(_.difference(_.range(1, 21), _.range(6, 20, 6)));
-            })
-        )
-        .subscribe(null, done, done);
-      }, 500);
+      .subscribe(null, done, done);
     });
 
     it(['should work as Rx.Observable.prototype.partitionNested(), ',
@@ -218,7 +250,8 @@ describe('Public API', function() {
       let partitioned = Rx.Observable.range(1, 20, Rx.Scheduler.asap)
       .partitionNested(x => x % 2 === 0);
 
-      let [evenSource, oddSource] = partitioned;
+      let evenSource = partitioned[0];
+      let oddSource = partitioned[1];
 
       Rx.Observable.merge(
           evenSource
@@ -234,11 +267,14 @@ describe('Public API', function() {
             expect(odds).to.eql(_.range(1, 20, 2));
           })
       )
-      .subscribe(null, done);
+      .subscribe(null, done, done);
 
-      setTimeout(function() {
-        let [multipleOfSixSource, notMultipleOfSixSource] = partitioned
+      after(function(done) {
+        let multipleOrNotOfSixPartition = partitioned
         .partitionNested(x => x % 3 === 0);
+
+        let multipleOfSixSource = multipleOrNotOfSixPartition[0];
+        let notMultipleOfSixSource = multipleOrNotOfSixPartition[1];
 
         Rx.Observable.merge(
             multipleOfSixSource
@@ -253,105 +289,394 @@ describe('Public API', function() {
             })
         )
         .subscribe(null, done, done);
-      }, 500);
+      });
     });
 
-// TODO it's unclear whether replay is still needed
-//    it('should replay', function(done) {
-//
-//      let fastDelay = 200;
-//      let slowDelay = 500;
-//
-//      let source = Rx.Observable.from([{
-//        rating: 4,
-//        color: 'green'
-//      }, {
-//        rating: 4,
-//        color: 'red'
-//      }, {
-//        rating: 2,
-//        color: 'yellow'
-//      }, {
-//        rating: 3,
-//        color: 'red'
-//      }, {
-//        rating: 5,
-//        color: 'green'
-//      }, {
-//        rating: 4,
-//        color: 'yellow'
-//      }, {
-//        rating: 4,
-//        color: 'red'
-//      }])
-//      .delay(fastDelay);
-//
-//      let rated4PlusPartition = Rx.Observable.hierarchicalPartition(
-//          function(item) {
-//            return item.rating >= 4;
-//          },
-//          source
-//      );
-//      let rated4PlusSource = rated4PlusPartition[0];
-//      let ratedUnder4Source = rated4PlusPartition[1]
-//      .delay(fastDelay);
-//
-//      let redRated4PlusPartition = Rx.Observable.hierarchicalPartition(
-//          function(item) {
-//            return item.color === 'red';
-//          },
-//          rated4PlusSource,
-//          ratedUnder4Source
-//      );
-//
-//      let redRated4PlusSource = redRated4PlusPartition[0];
-//      let notRedOrRatedUnder4Source = redRated4PlusPartition[1];
-//
-//      setTimeout(function() {
-//        rated4PlusPartition.replay();
-//      }, slowDelay);
-//
-//      redRated4PlusSource
-//      .toArray()
-//      .do(function(actual) {
-//        let expected = [{
-//          rating: 4,
-//          color: 'red'
-//        }, {
-//          rating: 4,
-//          color: 'red'
-//        }];
-//
-//        expect(actual).to.eql(expected);
-//      })
-//      .concat(
-//          notRedOrRatedUnder4Source
-//          .toArray()
-//          .do(function(actual) {
-//            let expected = [{
-//              rating: 4,
-//              color: 'green'
-//            }, {
-//              rating: 5,
-//              color: 'green'
-//            }, {
-//              rating: 4,
-//              color: 'yellow'
-//            }, {
-//              rating: 2,
-//              color: 'yellow'
-//            }, {
-//              rating: 3,
-//              color: 'red'
-//            }];
-//            expect(actual).to.eql(expected);
-//          }),
-//          Rx.Scheduler.asap
-//      )
-//      .do(() => {}, done)
-//      .subscribe(null, null, done);
-//    });
+    describe('mount()', function() {
+      describe('even after parent has finished', function(done) {
+        describe('last item passing predicates 1 and 2', function(done) {
+          let source = Rx.Observable.from([{
+            rating: 4,
+            color: 'green'
+          }, {
+            rating: 4,
+            color: 'red'
+          }, {
+            rating: 2,
+            color: 'yellow'
+          }, {
+            rating: 3,
+            color: 'red'
+          }, {
+            rating: 5,
+            color: 'green'
+          }, {
+            rating: 4,
+            color: 'yellow'
+          }, {
+            rating: 4,
+            color: 'red'
+          }]);
 
+          let rated4PlusPartition = source.partitionNested(
+              item => item.rating >= 4
+          );
+
+          after(function(done){
+            let redRated4PlusPartition = rated4PlusPartition.mount(item => item.color === 'red');
+
+            let redRated4PlusSource = redRated4PlusPartition[0];
+            let notRedOrRatedUnder4Source = redRated4PlusPartition[1];
+
+            redRated4PlusSource
+            .toArray()
+            .do((actual) => expect(actual).to.eql([{
+              rating: 4,
+              color: 'red'
+            }]))
+            .concat(
+                notRedOrRatedUnder4Source
+                .toArray()
+                .do((actual) => expect(actual).to.eql([])),
+                Rx.Scheduler.asap
+            )
+            .subscribe(null, done, done);
+          });
+
+          let rated4PlusSource = rated4PlusPartition[0];
+          let ratedUnder4Source = rated4PlusPartition[1];
+
+          it('should run through once', function(done) {
+            rated4PlusSource
+            .toArray()
+            .do(function(actual) {
+              expect(actual).to.eql([{
+                rating: 4,
+                color: 'green'
+              }, {
+                rating: 4,
+                color: 'red'
+              }, {
+                rating: 5,
+                color: 'green'
+              }, {
+                rating: 4,
+                color: 'yellow'
+              }, {
+                rating: 4,
+                color: 'red'
+              }]);
+            })
+            .concat(
+                ratedUnder4Source
+                .toArray()
+                .do(function(actual) {
+                  expect(actual).to.eql([{
+                    rating: 2,
+                    color: 'yellow'
+                  }, {
+                    rating: 3,
+                    color: 'red'
+                  }]);
+                }),
+                Rx.Scheduler.asap
+            )
+            .subscribe(null, done, done);
+          });
+        });
+
+        describe('last item passing predicate 1 only', function(done) {
+          let source = Rx.Observable.from([{
+            rating: 4,
+            color: 'green'
+          }, {
+            rating: 4,
+            color: 'red'
+          }, {
+            rating: 2,
+            color: 'yellow'
+          }, {
+            rating: 3,
+            color: 'red'
+          }, {
+            rating: 5,
+            color: 'green'
+          }, {
+            rating: 4,
+            color: 'red'
+          }, {
+            rating: 4,
+            color: 'yellow'
+          }]);
+
+          let rated4PlusPartition = source.partitionNested(
+              item => item.rating >= 4
+          );
+
+          after(function(done){
+            let redRated4PlusPartition = rated4PlusPartition.mount(item => item.color === 'red');
+
+            let redRated4PlusSource = redRated4PlusPartition[0];
+            let notRedOrRatedUnder4Source = redRated4PlusPartition[1];
+
+            redRated4PlusSource
+            .toArray()
+            .do((actual) => expect(actual).to.eql([]))
+            .concat(
+                notRedOrRatedUnder4Source
+                .toArray()
+                .do((actual) => expect(actual).to.eql([{
+                  rating: 4,
+                  color: 'yellow'
+                }])),
+                Rx.Scheduler.asap
+            )
+            .subscribe(null, done, done);
+          });
+
+          let rated4PlusSource = rated4PlusPartition[0];
+          let ratedUnder4Source = rated4PlusPartition[1];
+
+          it('should run through once', function(done) {
+            rated4PlusSource
+            .toArray()
+            .do(function(actual) {
+              expect(actual).to.eql([{
+                rating: 4,
+                color: 'green'
+              }, {
+                rating: 4,
+                color: 'red'
+              }, {
+                rating: 5,
+                color: 'green'
+              }, {
+                rating: 4,
+                color: 'red'
+              }, {
+                rating: 4,
+                color: 'yellow'
+              }]);
+            })
+            .concat(
+                ratedUnder4Source
+                .toArray()
+                .do(function(actual) {
+                  expect(actual).to.eql([{
+                    rating: 2,
+                    color: 'yellow'
+                  }, {
+                    rating: 3,
+                    color: 'red'
+                  }]);
+                }),
+                Rx.Scheduler.asap
+            )
+            .subscribe(null, done, done);
+          });
+        });
+
+        describe('last item passing predicate 2 only', function(done) {
+          let source = Rx.Observable.from([{
+            rating: 4,
+            color: 'green'
+          }, {
+            rating: 4,
+            color: 'red'
+          }, {
+            rating: 2,
+            color: 'yellow'
+          }, {
+            rating: 5,
+            color: 'green'
+          }, {
+            rating: 4,
+            color: 'red'
+          }, {
+            rating: 4,
+            color: 'yellow'
+          }, {
+            rating: 3,
+            color: 'red'
+          }]);
+
+          let rated4PlusPartition = source.partitionNested(
+              item => item.rating >= 4
+          );
+
+          after(function(done){
+            let redRated4PlusPartition = rated4PlusPartition.mount(item => item.color === 'red');
+
+            let redRated4PlusSource = redRated4PlusPartition[0];
+            let notRedOrRatedUnder4Source = redRated4PlusPartition[1];
+
+            redRated4PlusSource
+            .toArray()
+            .do((actual) => expect(actual).to.eql([]))
+            .concat(
+                notRedOrRatedUnder4Source
+                .toArray()
+                .do((actual) => expect(actual).to.eql([{
+                  rating: 3,
+                  color: 'red'
+                }])),
+                Rx.Scheduler.asap
+            )
+            .subscribe(null, done, done);
+          });
+
+          let rated4PlusSource = rated4PlusPartition[0];
+          let ratedUnder4Source = rated4PlusPartition[1];
+
+          it('should run through once', function(done) {
+            rated4PlusSource
+            .toArray()
+            .do(function(actual) {
+              expect(actual).to.eql([{
+                rating: 4,
+                color: 'green'
+              }, {
+                rating: 4,
+                color: 'red'
+              }, {
+                rating: 5,
+                color: 'green'
+              }, {
+                rating: 4,
+                color: 'red'
+              }, {
+                rating: 4,
+                color: 'yellow'
+              }]);
+            })
+            .concat(
+                ratedUnder4Source
+                .toArray()
+                .do(function(actual) {
+                  expect(actual).to.eql([{
+                    rating: 2,
+                    color: 'yellow'
+                  }, {
+                    rating: 3,
+                    color: 'red'
+                  }]);
+                }),
+                Rx.Scheduler.asap
+            )
+            .subscribe(null, done, done);
+          });
+        });
+
+        describe('pass all predicates & run partitionNested before & after mount', function(done) {
+          let source = Rx.Observable.from([{
+            rating: 4,
+            color: 'green',
+            available: true,
+          }, {
+            rating: 4,
+            color: 'red',
+            available: false,
+          }, {
+            rating: 2,
+            color: 'yellow',
+            available: true,
+          }, {
+            rating: 3,
+            color: 'red',
+            available: true,
+          }, {
+            rating: 5,
+            color: 'green',
+            available: true,
+          }, {
+            rating: 4,
+            color: 'yellow',
+            available: false,
+          }, {
+            rating: 4,
+            color: 'red',
+            available: true,
+          }]);
+
+          let rated4PlusPartition = source.partitionNested(
+              item => item.rating >= 4
+          );
+
+          after(function(done){
+            let redRated4PlusAvailablePartition = rated4PlusPartition
+            .mount(item => item.color === 'red')
+            .partitionNested(item => item.available);
+
+            let redRated4PlusAvailableSource = redRated4PlusAvailablePartition[0];
+            let notRedOrRatedUnder4AvailableSource = redRated4PlusAvailablePartition[1];
+
+            redRated4PlusAvailableSource
+            .toArray()
+            .do((actual) => expect(actual).to.eql([{
+              rating: 4,
+              color: 'red',
+              available: true,
+            }]))
+            .concat(
+                notRedOrRatedUnder4AvailableSource
+                .toArray()
+                .do((actual) => expect(actual).to.eql([])),
+                Rx.Scheduler.asap
+            )
+            .subscribe(null, done, done);
+          });
+
+          let rated4PlusSource = rated4PlusPartition[0];
+          let ratedUnder4Source = rated4PlusPartition[1];
+
+          it('should run through once', function(done) {
+            rated4PlusSource
+            .toArray()
+            .do(function(actual) {
+              expect(actual).to.eql([{
+                rating: 4,
+                color: 'green',
+                available: true,
+              }, {
+                rating: 4,
+                color: 'red',
+                available: false,
+              }, {
+                rating: 5,
+                color: 'green',
+                available: true,
+              }, {
+                rating: 4,
+                color: 'yellow',
+                available: false,
+              }, {
+                rating: 4,
+                color: 'red',
+                available: true,
+              }]);
+            })
+            .concat(
+                ratedUnder4Source
+                .toArray()
+                .do(function(actual) {
+                  expect(actual).to.eql([{
+                    rating: 2,
+                    color: 'yellow',
+                    available: true,
+                  }, {
+                    rating: 3,
+                    color: 'red',
+                    available: true,
+                  }]);
+                }),
+                Rx.Scheduler.asap
+            )
+            .subscribe(null, done, done);
+          });
+        });
+
+      });
+    });
   });
 
   describe('hierarchicalPartition', function() {

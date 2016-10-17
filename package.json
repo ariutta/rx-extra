@@ -17,7 +17,7 @@
         "src"
       ],
       "extensions": "ts,tsx,json",
-      "quiet": true
+      "quiet": false
     },
     "test": {
       "patterns": [

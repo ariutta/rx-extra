@@ -38,14 +38,10 @@ TODO: decide whether to update this to `partitionNested`. Also, consider using `
   import 'rxjs/add/observable/range';
   import 'rx-extra/add/operator/hierarchicalPartition';
   let [evenSource, oddSource] = Observable.range(1, 20)
-  .hierarchicalPartition(function(value) {
-    return value % 2 === 0;
-  });
+  .hierarchicalPartition(x => x % 2 === 0);
 
   let [multipleOfSixSource, notMultipleOfSixSource] = Observable.hierarchicalPartition(
-      function(value) {
-        return value % 3 === 0;
-      },
+      x => x % 3 === 0,
       evenSource,
       oddSource
   );
@@ -60,18 +56,12 @@ TODO: decide whether to update this to `partitionNested`. Also, consider using `
   import 'rxjs/add/observable/range';
   import 'rx-extra/add/operator/partitionNested';
   let partitioned = Observable.range(1, 20)
-  .partitionNested(function(value) {
-    return value % 2 === 0;
-  });
+  .partitionNested(x => x % 2 === 0);
 
   let [evenSource, oddSource] = partitioned;
 
-  let [multipleOfSixSource, notMultipleOfSixSource] = Observable.partitionNested(
-      partitioned,
-      function(value) {
-        return value % 3 === 0;
-      }
-  );
+  let [multipleOfSixSource, notMultipleOfSixSource] = partitioned
+  .partitionNested(x => x % 3 === 0);
 
   multipleOfSixSource
   .subscribe(console.log, console.error);
@@ -129,7 +119,7 @@ TODO: decide whether to update this to `partitionNested`. Also, consider using `
 ```
 
 If your transform stream has not set `objectMode: true`, you will need to handle
-any required conversion(s) between `String|Buffer` and `Number|Object`, e.g.:
+any required conversion(s) between `String|Buffer` and `Number|Boolean|Object`, e.g.:
 
 ```js
   Observable.range(1, 3)
