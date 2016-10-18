@@ -11,7 +11,7 @@ let _ = require('lodash');
 let csv = require('csv-streamify');
 let expect = require('chai').expect;
 let hl = require('highland');
-let JSONStream = require('jsonstream');
+let JSONStream = require('JSONStream');
 let Rx = require('../../index.js');
 let RxNode = Rx.RxNode;
 let sinon = require('sinon');
@@ -1134,7 +1134,7 @@ describe('Public API', function() {
   });
 
   describe('Rx.Observable.prototype.throughNodeStream', function() {
-    it('should convert a pausable stream to Observable (json)', function(done) {
+    it('should convert a pausable stream to Observable (JSON)', function(done) {
       let s = new stream.Readable();
       s._read = function noop() {};
 
@@ -1150,8 +1150,30 @@ describe('Public API', function() {
       s.push(null);
     });
 
+    it('should transform Observable (single JSON string, single result)', function(done) {
+      Rx.Observable.of('{"a": 1, "b": 2}')
+      .throughNodeStream(JSONStream.parse('a'))
+      .subscribe(function(actual) {
+        expect(actual).to.eql(1);
+      }, done, done);
+    });
+
+    it('should transform Observable (stringified JSON chunks, multiple results)', function(done) {
+      Rx.Observable.from([
+        '[{"a": 1},',
+        '{"a": 2},{"a":',
+        '3},',
+        '{"a": 4}]'
+      ])
+      .throughNodeStream(JSONStream.parse('..a'))
+      .toArray()
+      .subscribe(function(actual) {
+        expect(actual).to.eql([1, 2, 3, 4]);
+      }, done, done);
+    });
+
     it(['should convert an unpausable stream to an Observable that works with ',
-        'throughNodeStream (input: json object)'].join(''), function(done) {
+        'throughNodeStream (input: JSON object)'].join(''), function(done) {
       //let s = new stream.Readable({objectMode: true});
       let s = new stream.Readable();
       s._read = function noop() {};

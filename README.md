@@ -68,29 +68,31 @@ Observable.range(1, 3)
 
 ### throughNodeStream
 ```js
+import * as JSONStream from 'JSONStream';
+import {Observable} from 'rxjs/Observable';
+import 'rx-extra/add/operator/throughNodeStream';
+
+Observable.from([
+  '[{"a": 1},',
+  '{"a": 2},{"a":',
+  '3},',
+  '{"a": 4}]'
+])
+.throughNodeStream(JSONStream.parse('..a'))
+.subscribe(console.log, console.error);
+```
+
+If the `objectMode` option for your transform stream is not `true`,
+you will need to handle any required conversion(s) between
+`String|Buffer` and `Number|Boolean|Object`, e.g.:
+
+```js
 import {Observable} from 'rxjs/Observable';
 import 'rxjs/add/observable/range';
 import 'rx-extra/add/operator/map';
 import 'rx-extra/add/operator/throughNodeStream';
 import * as through2 from 'through2';
 
-Observable.range(1, 3)
-.map(x => x.toString())
-.throughNodeStream(through2.obj(function(x, enc, callback) {
-  var that = this;
-  for (var i=0; i<x; i++) {
-    that.push(x);
-  }
-  callback();
-}))
-.map(x => parseInt(x.toString()))
-.subscribe(console.log, console.error);
-```
-
-If your transform stream has not set `objectMode: true`, you will need to handle
-any required conversion(s) between `String|Buffer` and `Number|Boolean|Object`, e.g.:
-
-```js
 Observable.range(1, 3)
 .map(x => x.toString())
 .throughNodeStream(through2(function(chunk, enc, callback) {

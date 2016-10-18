@@ -1,7 +1,7 @@
 {
   "name": "rx-extra",
   "version": "1.0.2",
-  "description": "rx-extra contains additional functionality not contained in the rx package, such as \"splitOnChange\".",
+  "description": "rx-extra extends the RxJS 5 library with extra methods like fromNodeReadableStream and splitOnChange",
   "main": "index.js",
   "main:esnext": "lib-esnext/main.js",
   "scripts": {
@@ -53,11 +53,11 @@
     "rxjs": "^5.0.0-beta.12"
   },
   "devDependencies": {
+    "JSONStream": "^1.2.1",
     "browserify": "^13.1.0",
     "chai": "^3.5.0",
     "csv-streamify": "^3.0.3",
     "highland": "^2.10.0",
-    "jsonstream": "^1.0.3",
     "loggin": "^3.0.1",
     "mkdirp": "^0.5.1",
     "mocha": "^3.1.0",
