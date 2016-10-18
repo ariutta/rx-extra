@@ -948,7 +948,7 @@ describe('Public API', function() {
         'hi'
       ];
 
-      describe('function as keySelector', function() {
+      it('should work w/ function as keySelector', function(done) {
         let source = Rx.Observable.from([{
           id: 2,
           name: 'a'
@@ -983,41 +983,23 @@ describe('Public API', function() {
           return groupItem.id;
         };
 
-        it('should run as Rx.Observable.METHOD', function(done) {
-          Rx.Observable.splitOnChange(source, keySelector)
-          .map(function(groupItems) {
-            return groupItems
-            .map(function(groupItem) {
-              return groupItem.name;
-            })
-            .join('');
+        source
+        .splitOnChange(keySelector)
+        .map(function(groupItems) {
+          return groupItems
+          .map(function(groupItem) {
+            return groupItem.name;
           })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expected);
-            done();
-          });
-        });
-
-        it('should run as Rx.Observable.prototype.METHOD', function(done) {
-          source
-          .splitOnChange(keySelector)
-          .map(function(groupItems) {
-            return groupItems
-            .map(function(groupItem) {
-              return groupItem.name;
-            })
-            .join('');
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expected);
-            done();
-          });
+          .join('');
+        })
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+          done();
         });
       });
 
-      describe('string as keySelector', function() {
+      it('should work w/ string as keySelector', function(done) {
         let source = Rx.Observable.from([{
           id: 2,
           name: 'a'
@@ -1050,41 +1032,23 @@ describe('Public API', function() {
 
         let keySelector = 'id';
 
-        it('should run as Rx.Observable.METHOD', function(done) {
-          Rx.Observable.splitOnChange(source, keySelector)
-          .map(function(groupItems) {
-            return groupItems
-            .map(function(groupItem) {
-              return groupItem.name;
-            })
-            .join('');
+        source
+        .splitOnChange(keySelector)
+        .map(function(groupItems) {
+          return groupItems
+          .map(function(groupItem) {
+            return groupItem.name;
           })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expected);
-            done();
-          });
-        });
-
-        it('should run as Rx.Observable.prototype.METHOD', function(done) {
-          source
-          .splitOnChange(keySelector)
-          .map(function(groupItems) {
-            return groupItems
-            .map(function(groupItem) {
-              return groupItem.name;
-            })
-            .join('');
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expected);
-            done();
-          });
+          .join('');
+        })
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+          done();
         });
       });
 
-      describe('no keySelector', function() {
+      it('should work w/ no keySelector', function(done) {
         let sourceForNoKeySelector = Rx.Observable.from([
           'a',
           'a',
@@ -1104,31 +1068,16 @@ describe('Public API', function() {
           'd',
         ];
 
-        it('should run as Rx.Observable.METHOD', function(done) {
-          Rx.Observable.splitOnChange(sourceForNoKeySelector)
-          .map(function(groupItems) {
-            return groupItems
-            .join('');
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expectedForNoKeySelector);
-            done();
-          });
-        });
-
-        it('should run as Rx.Observable.prototype.METHOD', function(done) {
-          sourceForNoKeySelector
-          .splitOnChange()
-          .map(function(groupItems) {
-            return groupItems
-            .join('');
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expectedForNoKeySelector);
-            done();
-          });
+        sourceForNoKeySelector
+        .splitOnChange()
+        .map(function(groupItems) {
+          return groupItems
+          .join('');
+        })
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expectedForNoKeySelector);
+          done();
         });
       });
     });
@@ -1179,84 +1128,46 @@ describe('Public API', function() {
         'hi'
       ];
 
-      describe('function as keySelector', function() {
-
+      it('should work w/ function as keySelector', function(done) {
         let keySelector = function(groupItem) {
           return groupItem.id;
         };
 
-        it('should run as Rx.Observable.METHOD', function(done) {
-          Rx.Observable.splitOnChange(sourceForFnAndString, keySelector)
-          .map(function(groupItems) {
-            return groupItems
-            .map(function(groupItem) {
-              return groupItem.name;
-            })
-            .join('');
+        sourceForFnAndString
+        .splitOnChange(keySelector)
+        .map(function(groupItems) {
+          return groupItems
+          .map(function(groupItem) {
+            return groupItem.name;
           })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expectedForFnAndString);
-            done();
-          });
-        });
-
-        it('should run as Rx.Observable.prototype.METHOD', function(done) {
-          sourceForFnAndString
-          .splitOnChange(keySelector)
-          .map(function(groupItems) {
-            return groupItems
-            .map(function(groupItem) {
-              return groupItem.name;
-            })
-            .join('');
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expectedForFnAndString);
-            done();
-          });
+          .join('');
+        })
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expectedForFnAndString);
+          done();
         });
       });
 
-      describe('string as keySelector', function() {
+      it('should work w/ string as keySelector', function(done) {
         let keySelector = 'id';
-
-        it('should run as Rx.Observable.METHOD', function(done) {
-          Rx.Observable.splitOnChange(sourceForFnAndString, keySelector)
-          .map(function(groupItems) {
-            return groupItems
-            .map(function(groupItem) {
-              return groupItem.name;
-            })
-            .join('');
+        sourceForFnAndString
+        .splitOnChange(keySelector)
+        .map(function(groupItems) {
+          return groupItems
+          .map(function(groupItem) {
+            return groupItem.name;
           })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expectedForFnAndString);
-            done();
-          });
-        });
-
-        it('should run as Rx.Observable.prototype.METHOD', function(done) {
-          sourceForFnAndString
-          .splitOnChange(keySelector)
-          .map(function(groupItems) {
-            return groupItems
-            .map(function(groupItem) {
-              return groupItem.name;
-            })
-            .join('');
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expectedForFnAndString);
-            done();
-          });
+          .join('');
+        })
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expectedForFnAndString);
+          done();
         });
       });
 
-      describe('no keySelector', function() {
+      it('should work w/ no keySelector', function(done) {
         let sourceForNoKeySelector = Rx.Observable.from([
           'a',
           'a',
@@ -1279,31 +1190,16 @@ describe('Public API', function() {
           'd',
         ];
 
-        it('should run as Rx.Observable.METHOD', function(done) {
-          Rx.Observable.splitOnChange(sourceForNoKeySelector)
-          .map(function(groupItems) {
-            return groupItems
-            .join('');
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expectedForNoKeySelector);
-            done();
-          });
-        });
-
-        it('should run as Rx.Observable.prototype.METHOD', function(done) {
-          sourceForNoKeySelector
-          .splitOnChange()
-          .map(function(groupItems) {
-            return groupItems
-            .join('');
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expectedForNoKeySelector);
-            done();
-          });
+        sourceForNoKeySelector
+        .splitOnChange()
+        .map(function(groupItems) {
+          return groupItems
+          .join('');
+        })
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expectedForNoKeySelector);
+          done();
         });
       });
     });
@@ -1313,7 +1209,7 @@ describe('Public API', function() {
         'a',
       ];
 
-      describe('function as keySelector', function() {
+      it('should work w/ function as keySelector', function(done) {
         let source = Rx.Observable.from([{
           id: 2,
           name: 'a'
@@ -1324,76 +1220,42 @@ describe('Public API', function() {
           return groupItem.id;
         };
 
-        it('should run as Rx.Observable.METHOD', function(done) {
-          Rx.Observable.splitOnChange(source, keySelector)
-          .map(function(groupItems) {
-            return groupItems
-            .map(function(groupItem) {
-              return groupItem.name;
-            })
-            .join('');
+        source
+        .splitOnChange(keySelector)
+        .map(function(groupItems) {
+          return groupItems
+          .map(function(groupItem) {
+            return groupItem.name;
           })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expected);
-            done();
-          });
-        });
-
-        it('should run as Rx.Observable.prototype.METHOD', function(done) {
-          source
-          .splitOnChange(keySelector)
-          .map(function(groupItems) {
-            return groupItems
-            .map(function(groupItem) {
-              return groupItem.name;
-            })
-            .join('');
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expected);
-            done();
-          });
+          .join('');
+        })
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+          done();
         });
       });
 
-      describe('no keySelector', function() {
+      it('should work w/ no keySelector', function(done) {
         let source = Rx.Observable.from([
           'a',
         ])
         .publishReplay().refCount();
 
-        it('should run as Rx.Observable.METHOD', function(done) {
-          Rx.Observable.splitOnChange(source)
-          .map(function(groupItems) {
-            return groupItems
-            .join('');
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expected);
-            done();
-          });
+        source
+        .splitOnChange()
+        .map(function(groupItems) {
+          return groupItems
+          .join('');
+        })
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+          done();
         });
-
-        it('should run as Rx.Observable.prototype.METHOD', function(done) {
-          source
-          .splitOnChange()
-          .map(function(groupItems) {
-            return groupItems
-            .join('');
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expected);
-            done();
-          });
-        });
-
       });
 
-      describe('string as keySelector', function() {
+      it('should work w/ string as keySelector', function(done) {
         let source = Rx.Observable.from([{
           id: 2,
           name: 'a'
@@ -1402,40 +1264,22 @@ describe('Public API', function() {
 
         let keySelector = 'id';
 
-        it('should run as Rx.Observable.METHOD', function(done) {
-          Rx.Observable.splitOnChange(source, keySelector)
-          .map(function(groupItems) {
-            return groupItems
-            .map(function(groupItem) {
-              return groupItem.name;
-            })
-            .join('');
+        source
+        .splitOnChange(keySelector)
+        .map(function(groupItems) {
+          return groupItems
+          .map(function(groupItem) {
+            return groupItem.name;
           })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expected);
-            done();
-          });
+          .join('');
+        })
+        .toArray()
+        .subscribe(function(actual) {
+          expect(actual).to.eql(expected);
+          done();
         });
-
-        it('should run as Rx.Observable.prototype.METHOD', function(done) {
-          source
-          .splitOnChange(keySelector)
-          .map(function(groupItems) {
-            return groupItems
-            .map(function(groupItem) {
-              return groupItem.name;
-            })
-            .join('');
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expected);
-            done();
-          });
-        });
-
       });
+
     });
   });
 
