@@ -679,221 +679,6 @@ describe('Public API', function() {
     });
   });
 
-  describe('hierarchicalPartition', function() {
-    it('should work via non-chained call (Rx.Observable.hierarchicalPartition())', function(done) {
-      let source = Rx.Observable.range(1, 20, Rx.Scheduler.asap);
-
-      let [evenSource, oddSource] = Rx.Observable.hierarchicalPartition(
-          function(value) {
-            return value % 2 === 0;
-          },
-          source
-      );
-
-      let [multipleOfSixSource, notMultipleOfSixSource] = Rx.Observable.hierarchicalPartition(
-          function(value) {
-            return value % 3 === 0;
-          },
-          evenSource,
-          oddSource
-      );
-
-      multipleOfSixSource
-      .toArray()
-      .do(function(actual) {
-        let expected = [
-          6,
-          12,
-          18
-        ];
-        expect(actual).to.eql(expected);
-      })
-      .concat(
-        notMultipleOfSixSource
-        .toArray()
-        .do(function(actual) {
-          let expected = [
-            1,
-            2,
-            3,
-            4,
-            5,
-            7,
-            8,
-            9,
-            10,
-            11,
-            13,
-            14,
-            15,
-            16,
-            17,
-            19,
-            20
-          ];
-          expect(actual).to.eql(expected);
-        }),
-        Rx.Scheduler.asap
-      )
-      .do(() => {}, done)
-      .subscribe(null, null, done);
-    });
-
-    it('should replay', function(done) {
-
-      let fastDelay = 200;
-      let slowDelay = 500;
-
-      let source = Rx.Observable.from([{
-        rating: 4,
-        color: 'green'
-      }, {
-        rating: 4,
-        color: 'red'
-      }, {
-        rating: 2,
-        color: 'yellow'
-      }, {
-        rating: 3,
-        color: 'red'
-      }, {
-        rating: 5,
-        color: 'green'
-      }, {
-        rating: 4,
-        color: 'yellow'
-      }, {
-        rating: 4,
-        color: 'red'
-      }])
-      .delay(fastDelay);
-
-      let rated4PlusPartition = Rx.Observable.hierarchicalPartition(
-          function(item) {
-            return item.rating >= 4;
-          },
-          source
-      );
-      let rated4PlusSource = rated4PlusPartition[0];
-      let ratedUnder4Source = rated4PlusPartition[1]
-      .delay(fastDelay);
-
-      let redRated4PlusPartition = Rx.Observable.hierarchicalPartition(
-          function(item) {
-            return item.color === 'red';
-          },
-          rated4PlusSource,
-          ratedUnder4Source
-      );
-
-      let redRated4PlusSource = redRated4PlusPartition[0];
-      let notRedOrRatedUnder4Source = redRated4PlusPartition[1];
-
-      setTimeout(function() {
-        rated4PlusPartition.replay();
-      }, slowDelay);
-
-      redRated4PlusSource
-      .toArray()
-      .do(function(actual) {
-        let expected = [{
-          rating: 4,
-          color: 'red'
-        }, {
-          rating: 4,
-          color: 'red'
-        }];
-
-        expect(actual).to.eql(expected);
-      })
-      .concat(
-          notRedOrRatedUnder4Source
-          .toArray()
-          .do(function(actual) {
-            let expected = [{
-              rating: 4,
-              color: 'green'
-            }, {
-              rating: 5,
-              color: 'green'
-            }, {
-              rating: 4,
-              color: 'yellow'
-            }, {
-              rating: 2,
-              color: 'yellow'
-            }, {
-              rating: 3,
-              color: 'red'
-            }];
-            expect(actual).to.eql(expected);
-          }),
-          Rx.Scheduler.asap
-      )
-      .do(() => {}, done)
-      .subscribe(null, null, done);
-    });
-
-    it('should work as prototype', function(done) {
-      let [evenSource, oddSource] = Rx.Observable.range(1, 20, Rx.Scheduler.asap)
-      .hierarchicalPartition(function(value) {
-        return value % 2 === 0;
-      });
-
-      let [multipleOfSixSource, notMultipleOfSixSource] = Rx.Observable.hierarchicalPartition(
-          function(value) {
-            return value % 3 === 0;
-          },
-          evenSource,
-          oddSource
-      );
-
-      multipleOfSixSource
-      .takeUntil(Rx.Observable.timer(5, 5, Rx.Scheduler.asap))
-      .toArray()
-      .do(function(actual) {
-        let expected = [
-          6,
-          12,
-          18
-        ];
-        expect(actual).to.eql(expected);
-      })
-      .concat(
-          notMultipleOfSixSource
-          .takeUntil(Rx.Observable.timer(5, 5, Rx.Scheduler.asap))
-          .toArray()
-          .do(function(actual) {
-            let expected = [
-              1,
-              2,
-              3,
-              4,
-              5,
-              7,
-              8,
-              9,
-              10,
-              11,
-              13,
-              14,
-              15,
-              16,
-              17,
-              19,
-              20
-            ];
-            expect(actual).to.eql(expected);
-          }),
-          Rx.Scheduler.asap
-      )
-      .do(() => {}, done)
-      .subscribe(null, null, done);
-
-    });
-
-  });
-
   describe('thenable (Promise)', function() {
     it('should work on success', function(done) {
       Rx.Observable.range(1, 3, Rx.Scheduler.asap)
@@ -1475,15 +1260,13 @@ describe('Public API', function() {
     });
 
     it(['should convert an unpausable stream to an Observable that ',
-        'works with hierarchicalPartition'].join(''), function(done) {
+        'works with partitionNested'].join(''), function(done) {
       let s = new stream.Readable({objectMode: true});
       s._read = function noop() {};
       s.pause = undefined;
 
       Rx.Observable.fromNodeReadableStream(s)
-      .hierarchicalPartition(function(x) {
-        return x % 2 === 0;
-      })[0]
+      .partitionNested((x) => x % 2 === 0)[0]
       .toArray()
       .subscribe(function(actual) {
         expect(actual).to.eql([0, 2]);
@@ -1512,14 +1295,12 @@ describe('Public API', function() {
     });
 
     it(['should convert a pausable stream to an Observable that ',
-        'works with hierarchicalPartition'].join(''), function(done) {
+        'works with partitionNested'].join(''), function(done) {
       let s = new stream.Readable({objectMode: true});
       s._read = function noop() {};
 
       Rx.Observable.fromNodeReadableStream(s)
-      .hierarchicalPartition(function(x) {
-        return x % 2 === 0;
-      })[0]
+      .partitionNested((x) => x % 2 === 0)[0]
       .toArray()
       .subscribe(function(actual) {
         expect(actual).to.eql([0, 2]);

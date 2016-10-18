@@ -1,27 +1,15 @@
-// apply a Node.js transform stream to an Observable
+///<reference path="../../index.d.ts" />
 
-///<reference path="../index.d.ts" />
+// Apply a Node.js transform stream to an Observable
 
 import {Observable} from 'rxjs/Observable';
 import 'rxjs/add/observable/of';
 import 'rxjs/add/observable/fromEvent';
 import 'rxjs/add/observable/race';
-import 'rxjs/add/observable/timer';
+import '../add/observable/fromNodeReadableStream'
+
 import 'rxjs/add/operator/delay';
-import 'rxjs/add/operator/delayWhen';
 import 'rxjs/add/operator/let';
-import './fromNodeReadableStream'
-
-interface Options {
-	delay?: number;
-}
-
-declare module 'rxjs/Observable' {
-	export interface Observable<T> {
-		// TODO look up generics. is this correct?
-		throughNodeStream<U>(f: (x: NodeJS.ReadWriteStream, options: Options) => U): Observable<U>;
-	}
-}
 
 /************************************************
  * Find a delay (ms) to match the transform stream,
@@ -29,7 +17,11 @@ declare module 'rxjs/Observable' {
  * (Node stream signal to initiate backpressure)
  * and decreasing when it does (min 0).
  ************************************************/
-function getDelay(bpWarningCount, previousDelay, delay) {
+function getDelay(
+		bpWarningCount: number,
+		previousDelay: number,
+		delay: number
+): number {
 	let nextDelay;
 	if (bpWarningCount === 0) {
 		nextDelay = (previousDelay + delay) / 2;
@@ -47,7 +39,10 @@ function getDelay(bpWarningCount, previousDelay, delay) {
  * @param {Number} options.delay delay (in ms)
  * @return {Observable}
  */
-Observable.prototype.throughNodeStream = function(transformStream, options: Options = {delay: 0}) {
+export function throughNodeStream<T>(
+		transformStream: NodeJS.ReadWriteStream,
+		options: Options = {delay: 0}
+): Observable<T> {
 	// this is the number of consecutive times, starting with the most recent write
 	// and going backwards, that we've received a backpressure warning after a write.
 	let bpWarningCount = 0;
@@ -107,4 +102,15 @@ Observable.prototype.throughNodeStream = function(transformStream, options: Opti
 
 		return transformObservable;
 	});
-};
+}
+
+interface Options {
+	delay?: number;
+}
+
+export interface ThroughNodeStreamSignature<T> {
+  (
+		transformStream: NodeJS.ReadWriteStream,
+		options: Options,
+	): Observable<T>;
+}

@@ -8,18 +8,6 @@
 
 ## Methods
 
-TODO: decide on and implement a format for adding observables/operators, e.g.:
-```js
-  import {Observable} from 'rxjs/Observable';
-  import 'rx-extra/add/observable/fromNodeReadableStream';
-  import 'rx-extra/add/operator/splitOnChange';
-```
-
-TODO: consider using [`lift`](https://github.com/ReactiveX/RxJS/blob/master/doc/operator-creation.md) instead of patching directly:
-
-> 2) Create your own Observable subclass and override lift to return it:
-
-
 ### fromNodeReadableStream
 ```js
   import {Observable} from 'rxjs/Observable';
@@ -28,25 +16,6 @@ TODO: consider using [`lift`](https://github.com/ReactiveX/RxJS/blob/master/doc/
 
   Observable.fromNodeReadableStream(myStream)
   .map(x => objectMode ? x : x.toString())
-  .subscribe(console.log, console.error);
-```
-
-### hierarchicalPartition
-TODO: decide whether to update this to `partitionNested`. Also, consider using `prime` or `init` instead of `replay`.
-```js
-  import {Observable} from 'rxjs/Observable';
-  import 'rxjs/add/observable/range';
-  import 'rx-extra/add/operator/hierarchicalPartition';
-  let [evenSource, oddSource] = Observable.range(1, 20)
-  .hierarchicalPartition(x => x % 2 === 0);
-
-  let [multipleOfSixSource, notMultipleOfSixSource] = Observable.hierarchicalPartition(
-      x => x % 3 === 0,
-      evenSource,
-      oddSource
-  );
-
-  multipleOfSixSource
   .subscribe(console.log, console.error);
 ```
 
@@ -149,3 +118,13 @@ any required conversion(s) between `String|Buffer` and `Number|Boolean|Object`, 
     console.log(result);
   });
 ```
+
+## TODOs
+
+Move files into `add` directory as an NPM `prepublish` step.
+
+Publish as an new major version in alpha status.
+
+Consider using [`lift`](https://github.com/ReactiveX/RxJS/blob/master/doc/operator-creation.md) instead of patching directly:
+
+> 2) Create your own Observable subclass and override lift to return it:
