@@ -1,6 +1,6 @@
 # rx-extra
 
-`rx-extra` extends the [RxJS 5](https://github.com/ReactiveX/rxjs) library with extra methods like `fromNodeReadableStream` and `splitOnChange`. If you're still using [RxJS 4](https://github.com/Reactive-Extensions/RxJS), you'll find the compatible version of `rx-extra` in branch `[RxJS4](https://github.com/ariutta/rx-extra/tree/RxJS4)`.
+`rx-extra` extends the [RxJS 5](https://github.com/ReactiveX/rxjs) library with extra methods like `fromNodeReadableStream` and `splitOnChange`. If you're still using [RxJS 4](https://github.com/Reactive-Extensions/RxJS), you'll find the compatible version of `rx-extra` in branch [`RxJS4`](https://github.com/ariutta/rx-extra/tree/RxJS4).
 
 ## Install
 
