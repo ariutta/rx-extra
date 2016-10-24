@@ -104,7 +104,7 @@ export function throughNodeStream<T>(
 	});
 }
 
-interface Options {
+export interface Options {
 	delay?: number;
 }
 

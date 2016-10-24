@@ -44,7 +44,7 @@ export function splitOnChange<T>(
 	return subject;
 }
 
-type KeySelector = string|Function;
+export type KeySelector = string|Function;
 
 export interface SplitOnChangeSignature<T> {
   (

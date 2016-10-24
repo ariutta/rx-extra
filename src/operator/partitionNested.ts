@@ -164,7 +164,7 @@ export function partitionNestedInner<T>(
 	);
 };
 
-declare interface MountSignature<T> {
+export interface MountSignature<T> {
   (
 			mountableSource: Observable<T>,
 			passFn: PassFn<T>,
@@ -174,9 +174,9 @@ declare interface MountSignature<T> {
 	): PartitionNestedResult<T>;
 }
 
-type Partition<T> = [Observable<T>, Observable<T>]
+export type Partition<T> = [Observable<T>, Observable<T>]
 
-class PartitionNestedResult<T> extends Array<any> {
+export class PartitionNestedResult<T> extends Array<any> {
 	mount: MountSignature<T>;
 	partitionNested: PartitionNestedSignature<T>;
 	constructor(passSource, stopSource, mount, partitionNested) {
@@ -195,7 +195,7 @@ export interface PartitionNestedSignature<T> {
 	): PartitionNestedResult<T>;
 }
 
-type PassFn<T> = (value: T) => boolean;
+export type PassFn<T> = (value: T) => boolean;
 
 declare module 'rxjs/Observable' {
 	interface Observable<T> {
