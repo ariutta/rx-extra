@@ -1,8 +1,8 @@
 ///<reference path="../../index.d.ts" />
 
-import {Observable} from 'rxjs/Observable';
+import { Observable } from 'rxjs/Observable';
+import { ReplaySubject } from 'rxjs/ReplaySubject';
 import 'rxjs/add/observable/merge';
-import 'rxjs/add/operator/cache';
 import 'rxjs/add/operator/partition';
 
 // In some apps, a primary concern is updating
@@ -80,7 +80,7 @@ function mount<T>(
 		return grandparentRunningPassFn(value) && parentPassFn(value);
 	};
 	return partitionNestedInner(
-			mountableSource.partitionNested(parentRunningPassFn, thisArg),
+			mountableSource.last().partitionNested(parentRunningPassFn, thisArg),
 			passFn,
 			parentRunningPassFn,
 			thisArg
@@ -96,7 +96,8 @@ export function partitionNested<T>(
 	let partition: Partition<T> = source.partition(passFn, thisArg);
 	let [passSource, stopSource] = partition;
 
-	let mountableSource = source.cache(1);
+	let mountableSource = source
+	.multicast(() => new ReplaySubject(1)).refCount();
 
 	let parentRunningPassFn = () => true;
 
@@ -139,7 +140,7 @@ export function partitionNestedInner<T>(
 	let partition: Partition<T> = [passSource, stopSource];
 
 	let mountableSource = Observable.merge.apply(thisArg, partition)
-	.cache(1);
+	.multicast(() => new ReplaySubject(1)).refCount();
 
 	return new PartitionNestedResult(
 			passSource,
