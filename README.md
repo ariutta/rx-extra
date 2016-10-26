@@ -89,7 +89,7 @@ you will need to handle any required conversion(s) between
 ```js
 import {Observable} from 'rxjs/Observable';
 import 'rxjs/add/observable/range';
-import 'rx-extra/add/operator/map';
+import 'rxjs/add/operator/map';
 import 'rx-extra/add/operator/throughNodeStream';
 import * as through2 from 'through2';
 
@@ -123,10 +123,31 @@ Observable.range(1, 3)
 
 ## TODOs
 
-Move files into `add` directory as an NPM `prepublish` step.
-
 Publish as an new major version in alpha status.
 
 Consider using [`lift`](https://github.com/ReactiveX/RxJS/blob/master/doc/operator-creation.md) instead of patching directly:
 
 > 2) Create your own Observable subclass and override lift to return it:
+
+# Notes
+
+The `postinstall` lifecycle script in [package.json](./package.json) moves the contents of the `lib` directory
+up one level as a kluge to make it possible to add functionality like this:
+
+```js
+import 'rx-extra/add/operator/splitOnChange';
+/* instead of like this:
+import 'rx-extra/lib/add/operator/splitOnChange';
+//*/
+```
+
+This could be done as a `postpublish` lifecycle script, but then that import style wouldn't work
+if another local library specified a dependency on `rx-extra` like this:
+
+```json
+{
+  "dependencies": {
+    "rx-extra": "../rx-extra"
+  }
+}
+```
