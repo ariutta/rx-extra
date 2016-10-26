@@ -2,15 +2,19 @@
   "name": "rx-extra",
   "version": "1.0.2",
   "description": "rx-extra extends the RxJS 5 library with extra methods like fromNodeReadableStream and splitOnChange",
-  "main1": "index.js",
-  "main1:esnext": "esnext/main.js",
-  "main": "lib/",
-  "main:esnext": "esnext/",
+  "files": [
+    "lib/",
+    "esnext/",
+    "index.js"
+  ],
+  "main": "index.js",
+  "main:esnext": "esnext/main.js",
   "scripts": {
     "build": "npm run compile",
     "compile": "npm-run-all compile:*",
     "compile:es5": "rm -rf lib-es5 && cp -r src/ lib-es5 && tsc lib-es5/*.ts --declaration --sourceMap && rm -rf lib-es5/*.ts && rm -rf lib && mv lib-es5/ lib && echo ok || echo not ok",
     "compile:esnext": "rm -rf esnext && mkdir esnext && tsc src/*.ts --pretty --declaration --sourceMap --module commonjs --types 'node,lodash' --target ES2015 --outDir esnext && echo ok || echo not ok",
+    "postinstall": "mv ./lib/* ./ && mv main.js index.js",
     "test": "mocha test/spec/api.js --reporter min --colors && echo ok || echo not ok",
     "watch": "npm-watch"
   },
@@ -56,12 +60,10 @@
   },
   "devDependencies": {
     "JSONStream": "^1.2.1",
-    "browserify": "^13.1.0",
     "chai": "^3.5.0",
     "csv-streamify": "^3.0.3",
     "highland": "^2.10.0",
     "loggin": "^3.0.1",
-    "mkdirp": "^0.5.1",
     "mocha": "^3.1.0",
     "npm-run-all": "^3.1.0",
     "npm-watch": "^0.1.6",
