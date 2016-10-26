@@ -12,7 +12,7 @@
 ```js
 import {Observable} from 'rxjs/Observable';
 import 'rx-extra/add/observable/fromNodeReadableStream';
-import 'rx-extra/add/operator/map';
+import 'rxjs/add/operator/map';
 
 Observable.fromNodeReadableStream(myStream)
 .map(x => objectMode ? x : x.toString())
@@ -111,7 +111,7 @@ Observable.range(1, 3)
 ```js
 import {Observable} from 'rxjs/Observable';
 import 'rxjs/add/observable/range';
-import 'rx-extra/add/operator/toNodeCallback';
+import 'rxjs/add/operator/toNodeCallback';
 Observable.range(1, 3)
 .toNodeCallback(function(err, result) {
   if (err) {
