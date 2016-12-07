@@ -21,7 +21,7 @@
     "compile": "npm-run-all compile:*",
     "compile:es5": "npm run clean:es5 && tsc --types 'node,lodash,es6-promise' --target es5 --outDir ./ --project tsconfig.json && echo ok || echo not ok",
     "compile:esnext": "npm run clean:esnext && tsc --types 'node,lodash' --target es6 --outDir esnext --project tsconfig.json && echo ok || echo not ok",
-    "prepublish": "npm run build",
+    "prepublish": "npm run build && npm run test",
     "postpublish": "npm run clean",
     "test": "mocha test/spec/api.js --reporter min --colors && echo ok || echo not ok",
     "watch": "npm-watch"
@@ -36,7 +36,10 @@
     },
     "test": {
       "patterns": [
-        "lib",
+        "main.js",
+	"observable",
+	"operator",
+	"add",
         "test"
       ],
       "extensions": "js,jsx,json",
