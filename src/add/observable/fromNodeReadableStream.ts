@@ -8,7 +8,7 @@
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/publish';
 
-function fromNodeReadableStream(stream, finishEventName) {
+export function fromNodeReadableStreamStatic(stream, finishEventName) {
 	if (stream.pause) {
 		stream.pause();
 	}
@@ -46,10 +46,10 @@ function fromNodeReadableStream(stream, finishEventName) {
 
 declare module 'rxjs/Observable' {
   namespace Observable {
-    export let fromNodeReadableStream;
+    export let fromNodeReadableStream: typeof fromNodeReadableStreamStatic;
   }
 }
 
-Observable.fromNodeReadableStream = fromNodeReadableStream;
+Observable.fromNodeReadableStream = fromNodeReadableStreamStatic;
 
-export default fromNodeReadableStream;
+export default fromNodeReadableStreamStatic;

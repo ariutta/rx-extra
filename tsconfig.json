@@ -1,12 +1,13 @@
 {
     "compilerOptions": {
         "declaration": true,
+        "inlineSourceMap": true,
         "module": "commonjs",
 	"moduleResolution": "node",
-        "target": "es5",
         "noImplicitAny": false,
-	"pretty": true,
-        "sourceMap": true,
-	"types" : ["node", "lodash", "es6-promise"]
-    }
+	"pretty": true
+    },
+    "include": [
+        "src/**/*"
+    ]
 }

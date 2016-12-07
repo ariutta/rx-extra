@@ -1,6 +1,4 @@
-///<reference path="./node_modules/rxjs/Rx.d.ts" />
-
-import {Observable} from 'rxjs/Observable';
+import { Observable } from 'rxjs/Observable';
 
 interface PartitionNestedResult {
 	0: Observable<any>;
@@ -9,5 +7,4 @@ interface PartitionNestedResult {
 	replay?: Function;
 }
 
-declare module './src/main' {
-}
+declare module './src/main' {}
