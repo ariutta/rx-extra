@@ -1,12 +1,12 @@
 ///<reference path="../../../index.d.ts" />
 
-import {Observable} from 'rxjs/Observable';
-import {throughNodeStream as throughNodeStreamStatic, ThroughNodeStreamSignature} from '../../operator/throughNodeStream';
+import { Observable } from 'rxjs/Observable';
+import { throughNodeStream } from '../../operator/throughNodeStream';
 
-Observable.prototype.throughNodeStream = throughNodeStreamStatic;
+Observable.prototype.throughNodeStream = throughNodeStream;
 
 declare module 'rxjs/Observable' {
 	interface Observable<T> {
-		throughNodeStream: ThroughNodeStreamSignature<T>;
+		throughNodeStream: typeof throughNodeStream;
 	}
 }

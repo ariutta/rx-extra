@@ -2,7 +2,7 @@
 
 // Apply a Node.js transform stream to an Observable
 
-import {Observable} from 'rxjs/Observable';
+import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/of';
 import 'rxjs/add/observable/fromEvent';
 import 'rxjs/add/observable/race';
@@ -40,9 +40,10 @@ function getDelay(
  * @return {Observable}
  */
 export function throughNodeStream<T>(
+		this: Observable<T>,
 		transformStream: NodeJS.ReadWriteStream,
 		options: Options = {delay: 0}
-): Observable<T> {
+): Observable<any> {
 	// this is the number of consecutive times, starting with the most recent write
 	// and going backwards, that we've received a backpressure warning after a write.
 	let bpWarningCount = 0;
@@ -106,11 +107,4 @@ export function throughNodeStream<T>(
 
 export interface Options {
 	delay?: number;
-}
-
-export interface ThroughNodeStreamSignature<T> {
-  (
-		transformStream: NodeJS.ReadWriteStream,
-		options: Options,
-	): Observable<T>;
 }

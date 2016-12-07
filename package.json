@@ -1,11 +1,15 @@
 {
   "name": "rx-extra",
-  "version": "2.0.0-1",
+  "version": "2.0.0-2",
   "description": "rx-extra extends the RxJS 5 library with extra methods like fromNodeReadableStream and splitOnChange",
   "files": [
-    "lib/",
+    "add/",
+    "observable/",
+    "operator/",
     "esnext/",
-    "index.js"
+    "index.js",
+    "index.js.map",
+    "index.d.ts"
   ],
   "main": "index.js",
   "main:esnext": "esnext/main.js",
@@ -14,7 +18,8 @@
     "compile": "npm-run-all compile:*",
     "compile:es5": "rm -rf lib-es5 && cp -r src/ lib-es5 && tsc lib-es5/*.ts --declaration --sourceMap && rm -rf lib-es5/*.ts && rm -rf lib && mv lib-es5/ lib && echo ok || echo not ok",
     "compile:esnext": "rm -rf esnext && mkdir esnext && tsc src/*.ts --pretty --declaration --sourceMap --module commonjs --types 'node,lodash' --target ES2015 --outDir esnext && echo ok || echo not ok",
-    "postinstall": "mv ./lib/* ./ && mv main.js index.js",
+    "prepublish": "npm run build && cp -r lib/* ./ && cp index.js index-orig.js && mv main.js index.js && mv main.js.map index.js.map",
+    "postpublish": "rm -rf add/ && rm -rf observable/ && rm -rf operator/ && rm index.js.map && mv index-orig.js index.js",
     "test": "mocha test/spec/api.js --reporter min --colors && echo ok || echo not ok",
     "watch": "npm-watch"
   },
@@ -52,6 +57,7 @@
   },
   "homepage": "https://github.com/ariutta/rx-extra#readme",
   "dependencies": {
+    "@types/chai": "^3.4.34",
     "@types/es6-promise": "0.0.32",
     "@types/lodash": "^4.14.36",
     "@types/node": "^6.0.41",
@@ -73,7 +79,7 @@
     "through2": "^2.0.1",
     "to-transform": "^1.0.1",
     "tsify": "^1.0.7",
-    "typescript": "^2.0.3"
+    "typescript": "^2.1.4-insiders.20161206"
   },
   "semverBumper": {
     "jsonFiles": [
