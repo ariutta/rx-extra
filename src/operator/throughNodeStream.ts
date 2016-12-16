@@ -8,7 +8,9 @@ import 'rxjs/add/observable/fromEvent';
 import 'rxjs/add/observable/race';
 import '../add/observable/fromNodeReadableStream'
 
+import 'rxjs/add/operator/concatMap';
 import 'rxjs/add/operator/delay';
+import 'rxjs/add/operator/first';
 import 'rxjs/add/operator/let';
 
 /************************************************
