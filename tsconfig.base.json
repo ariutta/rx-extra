@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+	    "declaration": true,
+	    "experimentalDecorators": true,
+	    "inlineSourceMap": true,
+	    "jsx": "react",
+	    "moduleResolution": "node",
+	    "noEmitOnError": true,
+	    "noImplicitAny": false,
+	    "pretty": true
+    },
+    "include": [
+	"index.d.ts",
+        "src/**/*"
+    ],
+    "exclude": [
+	    "dist/**/*",
+	    "tmp/**/*"
+    ]
+}
