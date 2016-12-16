@@ -1,6 +1,6 @@
 # rx-extra
 
-`rx-extra` extends the [RxJS 5](https://github.com/ReactiveX/rxjs) library with extra methods like `fromNodeReadableStream` and `splitOnChange`. If you're still using [RxJS 4](https://github.com/Reactive-Extensions/RxJS), you can find the compatible version of `rx-extra` in the [RxJS4](https://github.com/ariutta/rx-extra/tree/RxJS4) branch.
+`rx-extra` extends the [RxJS 5](https://github.com/ReactiveX/rxjs) library with extra methods like `fromNodeReadableStream` and `splitOnChange`. If you're still using [RxJS 4](https://github.com/Reactive-Extensions/RxJS), you can find the compatible version of `rx-extra` in the [RxJS4 branch](https://github.com/ariutta/rx-extra/tree/RxJS4).
 
 ## Install
 
@@ -24,6 +24,7 @@ Observable.fromNodeReadableStream(myStream)
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/range';
 import 'rx-extra/add/operator/partitionNested';
+
 let partitioned = Observable.range(1, 20)
   .partitionNested(x => x % 2 === 0);
 
@@ -41,6 +42,7 @@ multipleOfSixSource
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/from';
 import 'rx-extra/add/operator/splitOnChange';
+
 Observable.from([{
   value: 5,
 }, {
@@ -62,6 +64,7 @@ Observable.from([{
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/range';
 import 'rx-extra/add/operator/then';
+
 Observable.range(1, 3)
   .then(console.log, console.error);
 ```
@@ -112,6 +115,7 @@ Observable.range(1, 3)
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/range';
 import 'rxjs/add/operator/toNodeCallback';
+
 Observable.range(1, 3)
   .toNodeCallback(function(err, result) {
     if (err) {
