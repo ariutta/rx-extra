@@ -1,7 +1,7 @@
 {
   "name": "rx-extra",
-  "version": "2.0.3",
-  "description": "rx-extra extends the RxJS 5 library with extra methods like fromNodeReadableStream and splitOnChange",
+  "version": "2.0.4",
+  "description": "rx-extra extends the library 'RxJS 5' with extra methods like 'fromNodeReadableStream' and 'splitOnChange'",
   "files": [
     "main.js",
     "main.d.ts",
