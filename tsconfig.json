@@ -1,12 +1,13 @@
 {
+    "extends": "./tsconfig.base",
     "compilerOptions": {
-        "declaration": true,
-        "inlineSourceMap": true,
-	"moduleResolution": "node",
-        "noImplicitAny": false,
-	"pretty": true
-    },
-    "include": [
-        "src/**/*"
-    ]
+	    "lib": [
+			"dom",
+			"es5",
+			"es6"
+	    ],
+	    "module": "commonjs",
+	    "outDir": "./",
+	    "target": "es5"
+    }
 }

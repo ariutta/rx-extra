@@ -1,6 +1,6 @@
 {
   "name": "rx-extra",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "rx-extra extends the RxJS 5 library with extra methods like fromNodeReadableStream and splitOnChange",
   "files": [
     "main.js",
@@ -19,8 +19,10 @@
     "clean:es5": "rm -rf main.js main.d.ts observable operator add",
     "clean:esnext": "rm -rf esnext",
     "compile": "npm-run-all compile:*",
-    "compile:es5": "npm run clean:es5 && tsc --project tsconfig.json --module commonjs --types 'node,lodash,es6-promise' --target es5 --outDir ./ && echo ok || echo not ok",
-    "compile:esnext": "npm run clean:esnext && tsc --project tsconfig.json --module es2015 --types 'node,lodash' --target es6 --outDir esnext && echo ok || echo not ok",
+    "compile-old:es5": "npm run clean:es5 && tsc --project tsconfig.json --module commonjs --types 'node,lodash' --target es5 && echo ok || echo not ok",
+    "compile:es5": "npm run clean:es5 && tsc --project tsconfig.json --outDir ./ && echo ok || echo not ok",
+    "compile-old:esnext": "npm run clean:esnext && tsc --project tsconfig.json --module es2015 --types 'node,lodash' --target es6 --outDir esnext && echo ok || echo not ok",
+    "compile:esnext": "npm run clean:esnext && tsc --project tsconfig.esnext.json && echo ok || echo not ok",
     "prepublish": "npm run build && npm run test",
     "postpublish": "npm run clean",
     "test": "mocha test/spec/api.js --reporter min --colors && echo ok || echo not ok",
@@ -64,7 +66,6 @@
   "homepage": "https://github.com/ariutta/rx-extra#readme",
   "dependencies": {
     "@types/chai": "^3.4.34",
-    "@types/es6-promise": "0.0.32",
     "@types/lodash": "^4.14.36",
     "@types/node": "^6.0.41",
     "lodash": "^4.16.2",
