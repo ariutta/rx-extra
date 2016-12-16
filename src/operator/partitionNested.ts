@@ -1,5 +1,3 @@
-///<reference path="../../index.d.ts" />
-
 import { Observable } from 'rxjs/Observable';
 import { ReplaySubject } from 'rxjs/ReplaySubject';
 import 'rxjs/add/observable/merge';

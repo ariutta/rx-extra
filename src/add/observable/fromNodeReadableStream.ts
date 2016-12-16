@@ -1,5 +1,3 @@
-///<reference path="../../../index.d.ts" />
-
 // for related code and discussion, see
 // https://github.com/Reactive-Extensions/rx-node/pull/16
 // and

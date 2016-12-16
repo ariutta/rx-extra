@@ -1,6 +1,4 @@
-///<reference path="../../index.d.ts" />
-
-import {Observable} from 'rxjs/Observable';
+import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/toArray';
 
 // Adapted from Netflix Falcor.js example

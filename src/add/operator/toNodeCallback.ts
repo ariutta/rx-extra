@@ -1,7 +1,5 @@
-///<reference path="../../../index.d.ts" />
-
-import {Observable} from 'rxjs/Observable';
-import {toNodeCallback as toNodeCallbackStatic, ToNodeCallbackSignature} from '../../operator/toNodeCallback';
+import { Observable } from 'rxjs/Observable';
+import { toNodeCallback as toNodeCallbackStatic, ToNodeCallbackSignature } from '../../operator/toNodeCallback';
 
 Observable.prototype.toNodeCallback = toNodeCallbackStatic;
 

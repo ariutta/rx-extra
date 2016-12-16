@@ -1,5 +1,3 @@
-///<reference path="../../index.d.ts" />
-
 // Apply a Node.js transform stream to an Observable
 
 import { Observable } from 'rxjs/Observable';

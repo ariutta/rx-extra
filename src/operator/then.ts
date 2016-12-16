@@ -1,5 +1,3 @@
-///<reference path="../../index.d.ts" />
-
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/toArray';
 import 'rxjs/add/operator/toPromise';

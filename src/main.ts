@@ -1,5 +1,3 @@
-///<reference path="../index.d.ts" />
-
 import * as Rx from 'rxjs/Rx';
 
 import './add/observable/fromNodeReadableStream';

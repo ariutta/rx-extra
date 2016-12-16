@@ -1,7 +1,5 @@
-///<reference path="../../index.d.ts" />
-
-import {Observable} from 'rxjs/Observable';
-import {ReplaySubject} from 'rxjs/ReplaySubject';
+import { Observable } from 'rxjs/Observable';
+import { ReplaySubject } from 'rxjs/ReplaySubject';
 
 export function splitOnChange<T>(
 		keySelector: KeySelector = (x) => x

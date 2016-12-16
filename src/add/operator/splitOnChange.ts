@@ -1,7 +1,5 @@
-///<reference path="../../../index.d.ts" />
-
-import {Observable} from 'rxjs/Observable';
-import {splitOnChange as splitOnChangeStatic, SplitOnChangeSignature} from '../../operator/splitOnChange';
+import { Observable } from 'rxjs/Observable';
+import { splitOnChange as splitOnChangeStatic, SplitOnChangeSignature } from '../../operator/splitOnChange';
 
 Observable.prototype.splitOnChange = splitOnChangeStatic;
 
