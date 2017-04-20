@@ -1,5 +1,6 @@
 import * as Rx from 'rxjs/Rx';
 
+import './add/observable/ask';
 import './add/observable/fromNodeReadableStream';
 
 import './add/operator/partitionNested';

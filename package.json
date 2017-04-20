@@ -37,9 +37,9 @@
     "test": {
       "patterns": [
         "main.js",
-	"observable",
-	"operator",
-	"add",
+        "observable",
+        "operator",
+        "add",
         "test"
       ],
       "extensions": "js,jsx,json",
@@ -66,6 +66,7 @@
     "@types/chai": "^3.4.34",
     "@types/lodash": "^4.14.36",
     "@types/node": "^6.0.41",
+    "inquirer": "^3.0.6",
     "lodash": "^4.16.2",
     "rxjs": "^5.0.0-rc.1"
   },
