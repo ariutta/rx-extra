@@ -65,7 +65,7 @@
   "dependencies": {
     "inquirer": "^3.0.6",
     "lodash": "^4.17.4",
-    "rxjs": "^5.4.2"
+    "rxjs": "^5.0.0-rc.1"
   },
   "devDependencies": {
     "@types/chai": "^4.0.1",
@@ -76,13 +76,13 @@
     "csv-streamify": "^3.0.3",
     "highland": "^2.11.1",
     "loggin": "^3.0.1",
-    "mocha": "^3.4.2",
+    "mocha": "^3.1.0",
     "npm-run-all": "^3.1.0",
     "npm-watch": "^0.1.6",
-    "sinon": "^1.17.7",
+    "sinon": "^1.17.6",
     "throttled-transform-stream": "^1.0.0",
     "through": "^2.3.8",
-    "through2": "^2.0.3",
+    "through2": "^2.0.1",
     "to-transform": "^1.0.1",
     "tsify": "^3.0.1",
     "typescript": "~2.3.6"
