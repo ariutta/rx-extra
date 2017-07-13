@@ -63,13 +63,13 @@
   },
   "homepage": "https://github.com/ariutta/rx-extra#readme",
   "dependencies": {
-    "inquirer": "^3.0.6",
+    "inquirer": "~3.0.6",
     "lodash": "^4.17.4",
-    "rxjs": "^5.0.0-rc.1"
+    "rxjs": "~5.0.3"
   },
   "devDependencies": {
     "@types/chai": "^4.0.1",
-    "@types/lodash": "^4.14.56",
+    "@types/lodash": "4.14.56",
     "@types/node": "^8.0.12",
     "JSONStream": "^1.2.1",
     "chai": "^4.1.0",
@@ -79,7 +79,7 @@
     "mocha": "^3.1.0",
     "npm-run-all": "^4.0.2",
     "npm-watch": "^0.2.0",
-    "sinon": "^1.17.6",
+    "sinon": "^2.3.8",
     "throttled-transform-stream": "^1.0.0",
     "through": "^2.3.8",
     "through2": "^2.0.1",
