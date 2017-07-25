@@ -23,8 +23,22 @@
     "compile:esnext": "npm run clean:esnext && tsc --project tsconfig.esnext.json && echo ok || echo not ok",
     "prepublish": "npm run build && npm run test",
     "postpublish": "npm run clean",
-    "test": "mocha test/spec/api.js --reporter min --colors && echo ok || echo not ok",
+    "test": "npm-run-all test:*",
+    "test:js": "mocha test/spec/api.js --reporter min --colors && echo ok || echo not ok",
+    "test:ts": "jest",
     "watch": "npm-watch"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ],
+    "testEnvironment": "node",
+    "transform": {
+      "\\.(ts|tsx|.js|.jsx)$": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    },
+    "testRegex": "((/src/.*\\.test\\.(ts|tsx|js))|(/test/spec/.*\\.(ts|tsx)))$"
   },
   "watch": {
     "compile:es5": {
@@ -65,27 +79,31 @@
   "dependencies": {
     "inquirer": "~3.0.6",
     "lodash": "^4.17.4",
-    "rxjs": "~5.0.3"
+    "rxjs": "^5.4.2"
   },
   "devDependencies": {
     "@types/chai": "^4.0.1",
+    "@types/jest": "^20.0.4",
     "@types/lodash": "4.14.56",
     "@types/node": "^8.0.12",
     "JSONStream": "^1.2.1",
     "chai": "^4.1.0",
     "csv-streamify": "^3.0.3",
     "highland": "^2.11.1",
+    "jest": "^20.0.4",
     "loggin": "^3.0.1",
     "mocha": "^3.1.0",
     "npm-run-all": "^4.0.2",
     "npm-watch": "^0.2.0",
     "sinon": "^2.3.8",
+    "source-map-support": "^0.4.15",
     "throttled-transform-stream": "^1.0.0",
     "through": "^2.3.8",
     "through2": "^2.0.1",
     "to-transform": "^1.0.1",
+    "ts-jest": "^20.0.7",
     "tsify": "^3.0.1",
-    "typescript": "~2.3.6"
+    "typescript": "^2.4.1"
   },
   "semverBumper": {
     "jsonFiles": [

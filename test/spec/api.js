@@ -2010,6 +2010,23 @@ describe("Public API", function() {
     });
   });
 
+  it("should work with Subject", function(done) {
+    var subject = new Rx.Subject();
+
+    const input = 1;
+
+    subject.subscribe(
+      function(actual) {
+        expect(actual).to.eql(input);
+      },
+      done,
+      done
+    );
+
+    subject.next(input);
+    subject.complete();
+  });
+
   //  it('should pan wrap', function(done) {
   //    done(new Error('Have not added a test for ...panWrap'));
   //  });

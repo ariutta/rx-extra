@@ -3,8 +3,10 @@
   "compilerOptions": {
     "lib": [
       "dom",
+      "dom.iterable",
       "es5",
-      "es6"
+      "es6",
+      "scripthost"
     ],
     "module": "commonjs",
     "outDir": "./",
