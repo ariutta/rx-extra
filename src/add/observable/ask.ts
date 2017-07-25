@@ -27,6 +27,7 @@ export type InquirerAnswerValue =
   | InquirerAnswerInputValue
   | InquirerAnswerListValue;
 export type InquirerAnswers = Map<string, InquirerAnswerValue>;
+export type AskOutput<T> = { value: T; answers: InquirerAnswers };
 
 /**
  * ask
@@ -49,7 +50,7 @@ export function askStatic<T>(
   createIterable: (x: T | T[]) => T[] = function(x: T | T[]): T[] {
     return isArray(x) ? x : [x];
   }
-): Observable<any> {
+): Observable<AskOutput<T>> {
   const rx4Source = new Rx4.Subject();
 
   const itemSource = rx4Source.concatMap(function(sourceValue) {
@@ -65,7 +66,7 @@ export function askStatic<T>(
   const inquirerSource = inquirer.prompt(fullPromptSource).ui.process;
 
   const rx4Output = itemSource
-    .concatMap(function(item) {
+    .concatMap(function(item): AskOutput<T> {
       const starter = {
         value: item,
         answers: {} as InquirerAnswers
@@ -79,7 +80,7 @@ export function askStatic<T>(
           // NOTE: the line below does the comparison before incrementing promptIndex.
           return promptIndex++ <= finalPromptIndex;
         }, inquirerSource.take(1))
-        .reduce(function(accumulator, response) {
+        .reduce(function(accumulator, response): AskOutput<T> {
           const name = response.name;
           const answer = response.answer;
           const answers = accumulator.answers;
@@ -109,10 +110,16 @@ export function askStatic<T>(
       throw err;
     });
 
-  const rx5Output = new Subject();
+  const rx5Output = new Subject() as Subject<AskOutput<T>>;
 
+  // TODO refactor to eliminate RxJS4 dependency.
+  // We are keeping the RxJS4 dependency here for now
+  // just to save development time, but that means
+  // we need to do conversions both to and from.
+
+  // from RxJS4 back to RxJS5
   rx4Output.subscribe(
-    function(x) {
+    function(x: AskOutput<T>) {
       rx5Output.next(x);
     },
     function(err) {
@@ -123,6 +130,7 @@ export function askStatic<T>(
     }
   );
 
+  // from RxJS5 to RxJS4.
   source.subscribe(
     function(x) {
       rx4Source.onNext(x);
