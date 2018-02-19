@@ -114,7 +114,7 @@ Observable.range(1, 3)
 ```js
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/range';
-import 'rxjs/add/operator/toNodeCallback';
+import 'rx-extra/add/operator/toNodeCallback';
 
 Observable.range(1, 3)
   .toNodeCallback(function(err, result) {
