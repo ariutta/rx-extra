@@ -13,3 +13,7 @@ src/themes/plain/
 src/themes/experimental/
 es5/
 esnext/
+add/
+main.d.ts
+main.js
+operator/
