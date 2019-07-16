@@ -14,7 +14,6 @@ let hl = require("highland");
 let JSONStream = require("JSONStream");
 let Rx = require("../../main.js");
 let sinon = require("sinon");
-let sologger = require("../sologger.js");
 let stream = require("stream");
 let ThrottledTransform = require("throttled-transform-stream").default;
 let through = require("through");
@@ -44,18 +43,16 @@ describe("Public API", function() {
 
       let editorTabsComponent = {
         vm: {
-          pvjsElementPartition: Rx.Observable
-            .from(
-              [
-                { type: "Metabolite" },
-                {},
-                { type: "Mitochondria" },
-                { type: "GeneProduct" },
-                { type: "Protein" }
-              ],
-              Rx.Scheduler.asap
-            )
-            .partitionNested(x => x.hasOwnProperty("type"))
+          pvjsElementPartition: Rx.Observable.from(
+            [
+              { type: "Metabolite" },
+              {},
+              { type: "Mitochondria" },
+              { type: "GeneProduct" },
+              { type: "Protein" }
+            ],
+            Rx.Scheduler.asap
+          ).partitionNested(x => x.hasOwnProperty("type"))
         }
       };
 
@@ -77,11 +74,13 @@ describe("Public API", function() {
     });
 
     it("should work one level deep", function(done) {
-      let evenOddPartition = Rx.Observable
-        .range(1, 20, Rx.Scheduler.asap)
-        .partitionNested(function(value) {
-          return value % 2 === 0;
-        });
+      let evenOddPartition = Rx.Observable.range(
+        1,
+        20,
+        Rx.Scheduler.asap
+      ).partitionNested(function(value) {
+        return value % 2 === 0;
+      });
 
       let evenSource = evenOddPartition[0];
       let oddSource = evenOddPartition[1];
@@ -103,8 +102,7 @@ describe("Public API", function() {
     });
 
     it("should work two levels deep", function(done) {
-      let multipleOfSixPartition = Rx.Observable
-        .range(1, 20, Rx.Scheduler.asap)
+      let multipleOfSixPartition = Rx.Observable.range(1, 20, Rx.Scheduler.asap)
         .partitionNested(function(value) {
           return value % 2 === 0;
         })
@@ -150,8 +148,11 @@ describe("Public API", function() {
     });
 
     it("should work three levels deep", function(done) {
-      let multipleOfTwelvePartition = Rx.Observable
-        .range(1, 20, Rx.Scheduler.asap)
+      let multipleOfTwelvePartition = Rx.Observable.range(
+        1,
+        20,
+        Rx.Scheduler.asap
+      )
         .partitionNested(function(value) {
           return value % 2 === 0;
         })
@@ -208,23 +209,29 @@ describe("Public API", function() {
         "partitioned.prototype.partitionNested()"
       ].join(""),
       function(done) {
-        let partitioned = Rx.Observable
-          .range(1, 20, Rx.Scheduler.asap)
-          .partitionNested(x => x % 2 === 0);
+        let partitioned = Rx.Observable.range(
+          1,
+          20,
+          Rx.Scheduler.asap
+        ).partitionNested(x => x % 2 === 0);
 
         let evenSource = partitioned[0];
         let oddSource = partitioned[1];
 
-        Rx.Observable
-          .merge(
-            evenSource.do(() => {}, done).toArray().do(evens => {
+        Rx.Observable.merge(
+          evenSource
+            .do(() => {}, done)
+            .toArray()
+            .do(evens => {
               expect(evens).to.eql(_.range(2, 21, 2));
             }),
-            oddSource.do(() => {}, done).toArray().do(odds => {
+          oddSource
+            .do(() => {}, done)
+            .toArray()
+            .do(odds => {
               expect(odds).to.eql(_.range(1, 20, 2));
             })
-          )
-          .subscribe(null, done, done);
+        ).subscribe(null, done, done);
 
         after(function(done) {
           let multipleOrNotOfSixPartition = partitioned.partitionNested(
@@ -234,18 +241,16 @@ describe("Public API", function() {
           let multipleOfSixSource = multipleOrNotOfSixPartition[0];
           let notMultipleOfSixSource = multipleOrNotOfSixPartition[1];
 
-          Rx.Observable
-            .merge(
-              multipleOfSixSource.toArray().do(multiplesOfSix => {
-                expect(multiplesOfSix).to.eql(_.range(6, 20, 6));
-              }),
-              notMultipleOfSixSource.toArray().do(notMultiplesOfSix => {
-                expect(notMultiplesOfSix).to.eql(
-                  _.difference(_.range(1, 21), _.range(6, 20, 6))
-                );
-              })
-            )
-            .subscribe(null, done, done);
+          Rx.Observable.merge(
+            multipleOfSixSource.toArray().do(multiplesOfSix => {
+              expect(multiplesOfSix).to.eql(_.range(6, 20, 6));
+            }),
+            notMultipleOfSixSource.toArray().do(notMultiplesOfSix => {
+              expect(notMultiplesOfSix).to.eql(
+                _.difference(_.range(1, 21), _.range(6, 20, 6))
+              );
+            })
+          ).subscribe(null, done, done);
         });
       }
     );
@@ -584,9 +589,7 @@ describe("Public API", function() {
           });
         });
 
-        describe("pass all predicates & run partitionNested before & after mount", function(
-          done
-        ) {
+        describe("pass all predicates & run partitionNested before & after mount", function(done) {
           let source = Rx.Observable.from([
             {
               rating: 4,
@@ -728,8 +731,7 @@ describe("Public API", function() {
 
     it("should work on error", function(done) {
       let message = "placeholder error";
-      Rx.Observable
-        .range(1, 3, Rx.Scheduler.asap)
+      Rx.Observable.range(1, 3, Rx.Scheduler.asap)
         .concat(Rx.Observable.throw(new Error(message)))
         .then(
           function(result) {
@@ -745,19 +747,19 @@ describe("Public API", function() {
 
   describe("convert Observable to node callback", function() {
     it("should work on success", function(done) {
-      Rx.Observable
-        .range(1, 3, Rx.Scheduler.asap)
-        .toNodeCallback(function(err, result) {
-          expect(err).to.equal(null);
-          expect(result).to.equal(3);
-          done();
-        });
+      Rx.Observable.range(1, 3, Rx.Scheduler.asap).toNodeCallback(function(
+        err,
+        result
+      ) {
+        expect(err).to.equal(null);
+        expect(result).to.equal(3);
+        done();
+      });
     });
 
     it("should work on error", function(done) {
       let message = "placeholder error";
-      Rx.Observable
-        .range(1, 3, Rx.Scheduler.asap)
+      Rx.Observable.range(1, 3, Rx.Scheduler.asap)
         .concat(Rx.Observable.throw(new Error(message)))
         .toNodeCallback(function(err, result) {
           expect(err.message).to.eql(message);
@@ -772,153 +774,7 @@ describe("Public API", function() {
       let expected = ["abcd", "efg", "hi"];
 
       it("should work w/ function as keySelector", function(done) {
-        let source = Rx.Observable
-          .from([
-            {
-              id: 2,
-              name: "a"
-            },
-            {
-              id: 2,
-              name: "b"
-            },
-            {
-              id: 2,
-              name: "c"
-            },
-            {
-              id: 2,
-              name: "d"
-            },
-            {
-              id: 3,
-              name: "e"
-            },
-            {
-              id: 3,
-              name: "f"
-            },
-            {
-              id: 3,
-              name: "g"
-            },
-            {
-              id: 4,
-              name: "h"
-            },
-            {
-              id: 4,
-              name: "i"
-            }
-          ])
-          .publishReplay()
-          .refCount();
-
-        let keySelector = function(groupItem) {
-          return groupItem.id;
-        };
-
-        source
-          .splitOnChange(keySelector)
-          .map(function(groupItems) {
-            return groupItems
-              .map(function(groupItem) {
-                return groupItem.name;
-              })
-              .join("");
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expected);
-            done();
-          });
-      });
-
-      it("should work w/ string as keySelector", function(done) {
-        let source = Rx.Observable
-          .from([
-            {
-              id: 2,
-              name: "a"
-            },
-            {
-              id: 2,
-              name: "b"
-            },
-            {
-              id: 2,
-              name: "c"
-            },
-            {
-              id: 2,
-              name: "d"
-            },
-            {
-              id: 3,
-              name: "e"
-            },
-            {
-              id: 3,
-              name: "f"
-            },
-            {
-              id: 3,
-              name: "g"
-            },
-            {
-              id: 4,
-              name: "h"
-            },
-            {
-              id: 4,
-              name: "i"
-            }
-          ])
-          .publishReplay()
-          .refCount();
-
-        let keySelector = "id";
-
-        source
-          .splitOnChange(keySelector)
-          .map(function(groupItems) {
-            return groupItems
-              .map(function(groupItem) {
-                return groupItem.name;
-              })
-              .join("");
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expected);
-            done();
-          });
-      });
-
-      it("should work w/ no keySelector", function(done) {
-        let sourceForNoKeySelector = Rx.Observable
-          .from(["a", "a", "a", "b", "b", "c", "c", "d"])
-          .publishReplay()
-          .refCount();
-
-        let expectedForNoKeySelector = ["aaa", "bb", "cc", "d"];
-
-        sourceForNoKeySelector
-          .splitOnChange()
-          .map(function(groupItems) {
-            return groupItems.join("");
-          })
-          .toArray()
-          .subscribe(function(actual) {
-            expect(actual).to.eql(expectedForNoKeySelector);
-            done();
-          });
-      });
-    });
-
-    describe("multiple elements in source, with reversion", function() {
-      let sourceForFnAndString = Rx.Observable
-        .from([
+        let source = Rx.Observable.from([
           {
             id: 2,
             name: "a"
@@ -944,12 +800,66 @@ describe("Public API", function() {
             name: "f"
           },
           {
+            id: 3,
+            name: "g"
+          },
+          {
+            id: 4,
+            name: "h"
+          },
+          {
+            id: 4,
+            name: "i"
+          }
+        ])
+          .publishReplay()
+          .refCount();
+
+        let keySelector = function(groupItem) {
+          return groupItem.id;
+        };
+
+        source
+          .splitOnChange(keySelector)
+          .map(function(groupItems) {
+            return groupItems
+              .map(function(groupItem) {
+                return groupItem.name;
+              })
+              .join("");
+          })
+          .toArray()
+          .subscribe(function(actual) {
+            expect(actual).to.eql(expected);
+            done();
+          });
+      });
+
+      it("should work w/ string as keySelector", function(done) {
+        let source = Rx.Observable.from([
+          {
+            id: 2,
+            name: "a"
+          },
+          {
+            id: 2,
+            name: "b"
+          },
+          {
             id: 2,
             name: "c"
           },
           {
             id: 2,
             name: "d"
+          },
+          {
+            id: 3,
+            name: "e"
+          },
+          {
+            id: 3,
+            name: "f"
           },
           {
             id: 3,
@@ -964,6 +874,103 @@ describe("Public API", function() {
             name: "i"
           }
         ])
+          .publishReplay()
+          .refCount();
+
+        let keySelector = "id";
+
+        source
+          .splitOnChange(keySelector)
+          .map(function(groupItems) {
+            return groupItems
+              .map(function(groupItem) {
+                return groupItem.name;
+              })
+              .join("");
+          })
+          .toArray()
+          .subscribe(function(actual) {
+            expect(actual).to.eql(expected);
+            done();
+          });
+      });
+
+      it("should work w/ no keySelector", function(done) {
+        let sourceForNoKeySelector = Rx.Observable.from([
+          "a",
+          "a",
+          "a",
+          "b",
+          "b",
+          "c",
+          "c",
+          "d"
+        ])
+          .publishReplay()
+          .refCount();
+
+        let expectedForNoKeySelector = ["aaa", "bb", "cc", "d"];
+
+        sourceForNoKeySelector
+          .splitOnChange()
+          .map(function(groupItems) {
+            return groupItems.join("");
+          })
+          .toArray()
+          .subscribe(function(actual) {
+            expect(actual).to.eql(expectedForNoKeySelector);
+            done();
+          });
+      });
+    });
+
+    describe("multiple elements in source, with reversion", function() {
+      let sourceForFnAndString = Rx.Observable.from([
+        {
+          id: 2,
+          name: "a"
+        },
+        {
+          id: 2,
+          name: "b"
+        },
+        {
+          id: 2,
+          name: "c"
+        },
+        {
+          id: 2,
+          name: "d"
+        },
+        {
+          id: 3,
+          name: "e"
+        },
+        {
+          id: 3,
+          name: "f"
+        },
+        {
+          id: 2,
+          name: "c"
+        },
+        {
+          id: 2,
+          name: "d"
+        },
+        {
+          id: 3,
+          name: "g"
+        },
+        {
+          id: 4,
+          name: "h"
+        },
+        {
+          id: 4,
+          name: "i"
+        }
+      ])
         .publishReplay()
         .refCount();
 
@@ -1009,8 +1016,17 @@ describe("Public API", function() {
       });
 
       it("should work w/ no keySelector", function(done) {
-        let sourceForNoKeySelector = Rx.Observable
-          .from(["a", "a", "a", "b", "a", "b", "c", "c", "d"])
+        let sourceForNoKeySelector = Rx.Observable.from([
+          "a",
+          "a",
+          "a",
+          "b",
+          "a",
+          "b",
+          "c",
+          "c",
+          "d"
+        ])
           .publishReplay()
           .refCount();
 
@@ -1033,13 +1049,12 @@ describe("Public API", function() {
       let expected = ["a"];
 
       it("should work w/ function as keySelector", function(done) {
-        let source = Rx.Observable
-          .from([
-            {
-              id: 2,
-              name: "a"
-            }
-          ])
+        let source = Rx.Observable.from([
+          {
+            id: 2,
+            name: "a"
+          }
+        ])
           .publishReplay()
           .refCount();
 
@@ -1064,7 +1079,9 @@ describe("Public API", function() {
       });
 
       it("should work w/ no keySelector", function(done) {
-        let source = Rx.Observable.from(["a"]).publishReplay().refCount();
+        let source = Rx.Observable.from(["a"])
+          .publishReplay()
+          .refCount();
 
         source
           .splitOnChange()
@@ -1079,13 +1096,12 @@ describe("Public API", function() {
       });
 
       it("should work w/ string as keySelector", function(done) {
-        let source = Rx.Observable
-          .from([
-            {
-              id: 2,
-              name: "a"
-            }
-          ])
+        let source = Rx.Observable.from([
+          {
+            id: 2,
+            name: "a"
+          }
+        ])
           .publishReplay()
           .refCount();
 
@@ -1122,8 +1138,7 @@ describe("Public API", function() {
         s._read = function noop() {};
         s.pause = pauseable ? s.pause : undefined;
 
-        Rx.Observable
-          .fromNodeReadableStream(s)
+        Rx.Observable.fromNodeReadableStream(s)
           .map(x => (objectMode ? x : x.toString()))
           .toArray()
           .subscribe(
@@ -1202,11 +1217,8 @@ describe("Public API", function() {
       s.push(null);
     });
 
-    it("should transform Observable (single JSON string, single result)", function(
-      done
-    ) {
-      Rx.Observable
-        .of('{"a": 1, "b": 2}')
+    it("should transform Observable (single JSON string, single result)", function(done) {
+      Rx.Observable.of('{"a": 1, "b": 2}')
         .throughNodeStream(JSONStream.parse("a"))
         .subscribe(
           function(actual) {
@@ -1217,11 +1229,8 @@ describe("Public API", function() {
         );
     });
 
-    it("should transform Observable (stringified JSON chunks, multiple results)", function(
-      done
-    ) {
-      Rx.Observable
-        .from(['[{"a": 1},', '{"a": 2},{"a":', "3},", '{"a": 4}]'])
+    it("should transform Observable (stringified JSON chunks, multiple results)", function(done) {
+      Rx.Observable.from(['[{"a": 1},', '{"a": 2},{"a":', "3},", '{"a": 4}]'])
         .throughNodeStream(JSONStream.parse("..a"))
         .toArray()
         .subscribe(
@@ -1386,8 +1395,7 @@ describe("Public API", function() {
         s._read = function noop() {};
         s.pause = undefined;
 
-        Rx.Observable
-          .fromNodeReadableStream(s)
+        Rx.Observable.fromNodeReadableStream(s)
           .partitionNested(x => x % 2 === 0)[0]
           .toArray()
           .subscribe(
@@ -1409,13 +1417,15 @@ describe("Public API", function() {
       let s = new stream.Readable({ objectMode: true });
       s._read = function noop() {};
 
-      Rx.Observable.fromNodeReadableStream(s).toArray().subscribe(
-        function(actual) {
-          expect(actual).to.eql([0, 1, 2]);
-        },
-        done,
-        done
-      );
+      Rx.Observable.fromNodeReadableStream(s)
+        .toArray()
+        .subscribe(
+          function(actual) {
+            expect(actual).to.eql([0, 1, 2]);
+          },
+          done,
+          done
+        );
 
       s.push(0);
       s.push(1);
@@ -1432,8 +1442,7 @@ describe("Public API", function() {
         let s = new stream.Readable({ objectMode: true });
         s._read = function noop() {};
 
-        Rx.Observable
-          .fromNodeReadableStream(s)
+        Rx.Observable.fromNodeReadableStream(s)
           .partitionNested(x => x % 2 === 0)[0]
           .toArray()
           .subscribe(
@@ -1451,9 +1460,7 @@ describe("Public API", function() {
       }
     );
 
-    it('should run Observable through slow "ThrottledTransform" transform stream', function(
-      done
-    ) {
+    it('should run Observable through slow "ThrottledTransform" transform stream', function(done) {
       let input = _.range(20);
       const SlowTransformStream = ThrottledTransform.create(
         (data, encoding, done) => {
@@ -1463,8 +1470,7 @@ describe("Public API", function() {
         }
       );
 
-      let source = Rx.Observable
-        .from(input)
+      let source = Rx.Observable.from(input)
         .map(x => x.toString())
         .throughNodeStream(new SlowTransformStream())
         .map(x => parseInt(x.toString()))
@@ -1478,9 +1484,7 @@ describe("Public API", function() {
         );
     });
 
-    it('should run Observable through slow "to-transform" transform stream', function(
-      done
-    ) {
+    it('should run Observable through slow "to-transform" transform stream', function(done) {
       let input = _.range(20);
       let TransformStream = transform((x, done) => {
         setTimeout(function() {
@@ -1489,8 +1493,7 @@ describe("Public API", function() {
         }, 50);
       });
 
-      let source = Rx.Observable
-        .from(input)
+      let source = Rx.Observable.from(input)
         .map(x => x.toString())
         .throughNodeStream(new TransformStream())
         .map(x => parseInt(x.toString()))
@@ -1533,18 +1536,19 @@ describe("Public API", function() {
           });
         });
 
-        source.throughNodeStream(transformStream).toArray().subscribe(
-          function(actual) {
-            expect(actual).to.eql(expected);
-          },
-          done,
-          done
-        );
+        source
+          .throughNodeStream(transformStream)
+          .toArray()
+          .subscribe(
+            function(actual) {
+              expect(actual).to.eql(expected);
+            },
+            done,
+            done
+          );
       });
 
-      it("should work when stream is variably slow to complete", function(
-        done
-      ) {
+      it("should work when stream is variably slow to complete", function(done) {
         let source = Rx.Observable.from(input);
 
         let transformStream = hl.pipeline(function(s) {
@@ -1569,18 +1573,19 @@ describe("Public API", function() {
           });
         });
 
-        source.throughNodeStream(transformStream).toArray().subscribe(
-          function(actual) {
-            expect(actual).to.eql(expected);
-          },
-          done,
-          done
-        );
+        source
+          .throughNodeStream(transformStream)
+          .toArray()
+          .subscribe(
+            function(actual) {
+              expect(actual).to.eql(expected);
+            },
+            done,
+            done
+          );
       });
 
-      it("should work when stream is consistently slow to complete", function(
-        done
-      ) {
+      it("should work when stream is consistently slow to complete", function(done) {
         let transformStream = hl.pipeline(function(s) {
           return s.consume(function(err, x, push, next) {
             if (err) {
@@ -1603,8 +1608,7 @@ describe("Public API", function() {
           });
         });
 
-        let source = Rx.Observable
-          .from(input)
+        let source = Rx.Observable.from(input)
           .throughNodeStream(transformStream)
           .toArray()
           .subscribe(
@@ -1639,8 +1643,7 @@ describe("Public API", function() {
           });
         });
 
-        let source = Rx.Observable
-          .from(input)
+        let source = Rx.Observable.from(input)
           .throughNodeStream(transformStream)
           .toArray()
           .subscribe(
@@ -1652,9 +1655,7 @@ describe("Public API", function() {
           );
       });
 
-      it("should work when stream is consistently slow to produce", function(
-        done
-      ) {
+      it("should work when stream is consistently slow to produce", function(done) {
         let transformStream = hl.pipeline(function(s) {
           return s.consume(function(err, x, push, next) {
             if (err) {
@@ -1677,8 +1678,7 @@ describe("Public API", function() {
           });
         });
 
-        Rx.Observable
-          .from(input)
+        Rx.Observable.from(input)
           .throughNodeStream(transformStream)
           .toArray()
           .subscribe(
@@ -1699,9 +1699,7 @@ describe("Public API", function() {
       }, []);
       let maxDelay = 20;
 
-      it("should work when stream is fast (end not defined/use default)", function(
-        done
-      ) {
+      it("should work when stream is fast (end not defined/use default)", function(done) {
         // NOTE: "through" uses "push" as an alias for "queue"
         // NOTE: when "end" function is not defined,
         //   "through" default is "function () { this.queue(null) }"
@@ -1712,8 +1710,7 @@ describe("Public API", function() {
           }
         });
 
-        let source = Rx.Observable
-          .from(input)
+        let source = Rx.Observable.from(input)
           .map(x => x.toString())
           .throughNodeStream(transformStream)
           .map(x => parseInt(x.toString()))
@@ -1751,8 +1748,7 @@ describe("Public API", function() {
           }
         );
 
-        let source = Rx.Observable
-          .from(input)
+        let source = Rx.Observable.from(input)
           .map(x => x.toString())
           .throughNodeStream(transformStream)
           .map(x => parseInt(x.toString()))
@@ -1766,9 +1762,7 @@ describe("Public API", function() {
           );
       });
 
-      it("should work when stream is consistently slow to produce", function(
-        done
-      ) {
+      it("should work when stream is consistently slow to produce", function(done) {
         let transformStream = through(
           function write(x) {
             this.pause();
@@ -1792,8 +1786,7 @@ describe("Public API", function() {
           }
         );
 
-        let source = Rx.Observable
-          .from(input)
+        let source = Rx.Observable.from(input)
           .map(x => x.toString())
           .throughNodeStream(transformStream)
           .map(x => parseInt(x.toString()))
@@ -1807,9 +1800,7 @@ describe("Public API", function() {
           );
       });
 
-      it("should work when stream is variably slow to complete", function(
-        done
-      ) {
+      it("should work when stream is variably slow to complete", function(done) {
         let transformStream = through(
           function write(x) {
             this.pause();
@@ -1833,8 +1824,7 @@ describe("Public API", function() {
           }
         );
 
-        let source = Rx.Observable
-          .from(input)
+        let source = Rx.Observable.from(input)
           .map(x => x.toString())
           .throughNodeStream(transformStream)
           .map(x => parseInt(x.toString()))
@@ -1872,8 +1862,7 @@ describe("Public API", function() {
           }
         );
 
-        let source = Rx.Observable
-          .from(input)
+        let source = Rx.Observable.from(input)
           .map(x => x.toString())
           .throughNodeStream(transformStream)
           .map(x => parseInt(x.toString()))
@@ -1909,18 +1898,19 @@ describe("Public API", function() {
           callback();
         });
 
-        source.throughNodeStream(slowTransformStream).toArray().subscribe(
-          function(actual) {
-            expect(actual).to.eql(expected);
-          },
-          done,
-          done
-        );
+        source
+          .throughNodeStream(slowTransformStream)
+          .toArray()
+          .subscribe(
+            function(actual) {
+              expect(actual).to.eql(expected);
+            },
+            done,
+            done
+          );
       });
 
-      it("should work when stream is variably slow to complete", function(
-        done
-      ) {
+      it("should work when stream is variably slow to complete", function(done) {
         let source = Rx.Observable.from(input);
 
         let slowTransformStream = through2.obj(function(x, enc, callback) {
@@ -1933,13 +1923,16 @@ describe("Public API", function() {
           }, maxDelay / x);
         });
 
-        source.throughNodeStream(slowTransformStream).toArray().subscribe(
-          function(actual) {
-            expect(actual).to.eql(expected);
-          },
-          done,
-          done
-        );
+        source
+          .throughNodeStream(slowTransformStream)
+          .toArray()
+          .subscribe(
+            function(actual) {
+              expect(actual).to.eql(expected);
+            },
+            done,
+            done
+          );
       });
 
       it("should when stream is consistently slow to complete", function(done) {
@@ -1955,13 +1948,16 @@ describe("Public API", function() {
           }, maxDelay);
         });
 
-        source.throughNodeStream(slowTransformStream).toArray().subscribe(
-          function(actual) {
-            expect(actual).to.eql(expected);
-          },
-          done,
-          done
-        );
+        source
+          .throughNodeStream(slowTransformStream)
+          .toArray()
+          .subscribe(
+            function(actual) {
+              expect(actual).to.eql(expected);
+            },
+            done,
+            done
+          );
       });
 
       it("should when stream is variably slow to produce", function(done) {
@@ -1977,13 +1973,16 @@ describe("Public API", function() {
           }, maxDelay / x);
         });
 
-        source.throughNodeStream(slowTransformStream).toArray().subscribe(
-          function(actual) {
-            expect(actual).to.eql(expected);
-          },
-          done,
-          done
-        );
+        source
+          .throughNodeStream(slowTransformStream)
+          .toArray()
+          .subscribe(
+            function(actual) {
+              expect(actual).to.eql(expected);
+            },
+            done,
+            done
+          );
       });
 
       it("should when stream is consistently slow to produce", function(done) {
@@ -1999,13 +1998,16 @@ describe("Public API", function() {
           }, maxDelay);
         });
 
-        source.throughNodeStream(slowTransformStream).toArray().subscribe(
-          function(actual) {
-            expect(actual).to.eql(expected);
-          },
-          done,
-          done
-        );
+        source
+          .throughNodeStream(slowTransformStream)
+          .toArray()
+          .subscribe(
+            function(actual) {
+              expect(actual).to.eql(expected);
+            },
+            done,
+            done
+          );
       });
     });
   });
