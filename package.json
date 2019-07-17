@@ -24,7 +24,6 @@
     "compile:esnext": "npm run clean:esnext && tsc --project tsconfig.esnext.json && echo ok || echo not ok",
     "prepare": "ALLE_DIR='../../../'; if [ ! -d ./node_modules ] && [ -d $ALLE_DIR/node_modules ]; then echo 'Alle configuration detected. Testing from the top-level alle directory...'; (cd $ALLE_DIR; npm run 'rx-extra:build'); else npm run build; fi",
     "prepublishOnly": "ALLE_DIR='../../../'; if [ ! -d ./node_modules ] && [ -d $ALLE_DIR/node_modules ]; then echo 'Alle configuration detected. Testing from the top-level alle directory...'; (cd $ALLE_DIR; npm run 'rx-extra:test'); else npm run test; fi",
-    "postpublish": "npm run clean",
     "test": "mocha test/spec/api.js --reporter min --colors && echo ok || echo not ok",
     "watch": "npm-watch"
   },
