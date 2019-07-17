@@ -1,6 +1,6 @@
 {
   "name": "rx-extra",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "rx-extra extends the library RxJS 5 with extra methods like 'fromNodeReadableStream' and 'splitOnChange'",
   "files": [
     "main.js",
@@ -22,20 +22,28 @@
     "compile": "npm-run-all compile:*",
     "compile:es5": "npm run clean:es5 && tsc --project tsconfig.json && echo ok || echo not ok",
     "compile:esnext": "npm run clean:esnext && tsc --project tsconfig.esnext.json && echo ok || echo not ok",
-    "prepare": "if [ -d ./node_modules ]; then npm run build; else echo 'Alle configuration detected. Building from the top-level alle directory...'; (cd ../../../; npm run 'rx-extra:build'); fi",
-    "prepublishOnly": "if [ -d ./node_modules ]; then npm run test; else echo 'Alle configuration detected. Testing from the top-level alle directory...'; (cd ../../../; npm run 'rx-extra:test'); fi",
+    "prepare": "ALLE_DIR='../../../'; if [ ! -d ./node_modules ] && [ -d $ALLE_DIR/node_modules ]; then echo 'Alle configuration detected. Testing from the top-level alle directory...'; (cd $ALLE_DIR; npm run 'rx-extra:build'); else npm run build; fi",
+    "prepublishOnly": "ALLE_DIR='../../../'; if [ ! -d ./node_modules ] && [ -d $ALLE_DIR/node_modules ]; then echo 'Alle configuration detected. Testing from the top-level alle directory...'; (cd $ALLE_DIR; npm run 'rx-extra:test'); else npm run test; fi",
     "postpublish": "npm run clean",
     "test": "mocha test/spec/api.js --reporter min --colors && echo ok || echo not ok",
     "watch": "npm-watch"
   },
   "watch": {
     "compile:es5": {
-      "patterns": ["src"],
+      "patterns": [
+        "src"
+      ],
       "extensions": "ts,tsx,json",
       "quiet": false
     },
     "test": {
-      "patterns": ["main.js", "observable", "operator", "add", "test"],
+      "patterns": [
+        "main.js",
+        "observable",
+        "operator",
+        "add",
+        "test"
+      ],
       "extensions": "js,jsx,json",
       "quiet": true
     }
@@ -45,7 +53,11 @@
     "type": "git",
     "url": "git+ssh://git@github.com/ariutta/rx-extra.git"
   },
-  "keywords": ["rx", "rxjs", "observable"],
+  "keywords": [
+    "rx",
+    "rxjs",
+    "observable"
+  ],
   "author": "Anders Riutta",
   "license": "MIT",
   "bugs": {
