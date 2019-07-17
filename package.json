@@ -22,28 +22,20 @@
     "compile": "npm-run-all compile:*",
     "compile:es5": "npm run clean:es5 && tsc --project tsconfig.json && echo ok || echo not ok",
     "compile:esnext": "npm run clean:esnext && tsc --project tsconfig.esnext.json && echo ok || echo not ok",
-    "prepare": "npm run build",
-    "prepublishOnly": "npm run test",
+    "prepare": "if [ -d ./node_modules ]; then npm run build; else echo 'Alle configuration detected. Building from the top-level alle directory...'; (cd ../../../; npm run 'rx-extra:build'); fi",
+    "prepublishOnly": "if [ -d ./node_modules ]; then npm run test; else echo 'Alle configuration detected. Testing from the top-level alle directory...'; (cd ../../../; npm run 'rx-extra:test'); fi",
     "postpublish": "npm run clean",
     "test": "mocha test/spec/api.js --reporter min --colors && echo ok || echo not ok",
     "watch": "npm-watch"
   },
   "watch": {
     "compile:es5": {
-      "patterns": [
-        "src"
-      ],
+      "patterns": ["src"],
       "extensions": "ts,tsx,json",
       "quiet": false
     },
     "test": {
-      "patterns": [
-        "main.js",
-        "observable",
-        "operator",
-        "add",
-        "test"
-      ],
+      "patterns": ["main.js", "observable", "operator", "add", "test"],
       "extensions": "js,jsx,json",
       "quiet": true
     }
@@ -53,11 +45,7 @@
     "type": "git",
     "url": "git+ssh://git@github.com/ariutta/rx-extra.git"
   },
-  "keywords": [
-    "rx",
-    "rxjs",
-    "observable"
-  ],
+  "keywords": ["rx", "rxjs", "observable"],
   "author": "Anders Riutta",
   "license": "MIT",
   "bugs": {
