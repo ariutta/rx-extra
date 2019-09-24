@@ -1,6 +1,6 @@
 {
   "name": "rx-extra",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "rx-extra extends the library RxJS 5 with extra methods like 'fromNodeReadableStream' and 'splitOnChange'",
   "files": [
     "main.js",
@@ -22,8 +22,8 @@
     "compile": "npm-run-all compile:*",
     "compile:es5": "npm run clean:es5 && tsc --project tsconfig.json && echo ok || echo not ok",
     "compile:esnext": "npm run clean:esnext && tsc --project tsconfig.esnext.json && echo ok || echo not ok",
-    "prepare": "ALLE_DIR='../../../'; if [ ! -d ./node_modules ] && [ -d $ALLE_DIR/node_modules ]; then echo 'Alle configuration detected. Testing from the top-level alle directory...'; (cd $ALLE_DIR; npm run 'rx-extra:build'); else npm run build; fi",
-    "prepublishOnly": "ALLE_DIR='../../../'; if [ ! -d ./node_modules ] && [ -d $ALLE_DIR/node_modules ]; then echo 'Alle configuration detected. Testing from the top-level alle directory...'; (cd $ALLE_DIR; npm run 'rx-extra:test'); else npm run test; fi",
+    "prepare": "ALLE_DIR='../../../'; if [ ! -d ./node_modules ] && [ -d $ALLE_DIR/node_modules ]; then echo 'Alle configuration detected. Testing from the top-level alle directory...' && (cd $ALLE_DIR && npm run 'rx-extra:build'); else npm run build; fi",
+    "prepublishOnly": "ALLE_DIR='../../../'; if [ ! -d ./node_modules ] && [ -d $ALLE_DIR/node_modules ]; then echo 'Alle configuration detected. Testing from the top-level alle directory...' && (cd $ALLE_DIR && npm run 'rx-extra:test'); else npm run test; fi",
     "test": "mocha test/spec/api.js --reporter min --colors && echo ok || echo not ok",
     "watch": "npm-watch"
   },
