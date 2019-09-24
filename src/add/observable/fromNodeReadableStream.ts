@@ -3,46 +3,48 @@
 // and
 // https://github.com/HackerHappyHour/rxjs-node/blob/master/lib/fromReadStream.js
 
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/publish';
+import { Observable } from "rxjs/Observable";
+import "rxjs/add/operator/publish";
 
 export function fromNodeReadableStreamStatic(stream, finishEventName) {
-	if (stream.pause) {
-		stream.pause();
-	}
+  if (stream.pause) {
+    stream.pause();
+  }
 
-	finishEventName = finishEventName || 'end';
+  finishEventName = finishEventName || "end";
 
-	return Observable.create(function(observer) {
-		function dataHandler(data) {
-			observer.next(data);
-		}
+  return Observable.create(function(observer) {
+    function dataHandler(data) {
+      observer.next(data);
+    }
 
-		function errorHandler(err) {
-			observer.error(err);
-		}
+    function errorHandler(err) {
+      observer.error(err);
+    }
 
-		function endHandler() {
-			observer.complete();
-		}
+    function endHandler() {
+      observer.complete();
+    }
 
-		stream.addListener('data', dataHandler);
-		stream.addListener('error', errorHandler);
-		stream.addListener(finishEventName, endHandler);
+    stream.addListener("data", dataHandler);
+    stream.addListener("error", errorHandler);
+    stream.addListener(finishEventName, endHandler);
 
-		if (stream.resume) {
-			stream.resume();
-		}
+    if (stream.resume) {
+      stream.resume();
+    }
 
-		return function() {
-			stream.removeListener('data', dataHandler);
-			stream.removeListener('error', errorHandler);
-			stream.removeListener(finishEventName, endHandler);
-		};
-	}).publish().refCount();
-};
+    return function() {
+      stream.removeListener("data", dataHandler);
+      stream.removeListener("error", errorHandler);
+      stream.removeListener(finishEventName, endHandler);
+    };
+  })
+    .publish()
+    .refCount();
+}
 
-declare module 'rxjs/Observable' {
+declare module "rxjs/Observable" {
   namespace Observable {
     export let fromNodeReadableStream: typeof fromNodeReadableStreamStatic;
   }

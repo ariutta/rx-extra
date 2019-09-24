@@ -1,5 +1,8 @@
-import { Observable } from 'rxjs/Observable';
-import { partitionNested as partitionNestedStatic, PartitionNestedSignature } from '../../operator/partitionNested';
+import { Observable } from "rxjs/Observable";
+import {
+  partitionNested as partitionNestedStatic,
+  PartitionNestedSignature
+} from "../../operator/partitionNested";
 
 Observable.prototype.partitionNested = partitionNestedStatic;
 

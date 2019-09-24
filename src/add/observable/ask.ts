@@ -75,35 +75,37 @@ export function askStatic<T>(
       const promptSet = getPromptSet(item);
       let finalPromptIndex = promptSet.length - 1;
       let promptIndex = 0;
-      return Rx4.Observable
-        .while(function() {
-          // NOTE: the line below does the comparison before incrementing promptIndex.
-          return promptIndex++ <= finalPromptIndex;
-        }, inquirerSource.take(1))
-        .reduce(function(accumulator, response): AskOutput<T> {
-          const name = response.name;
-          const answer = response.answer;
-          const answers = accumulator.answers;
-          answers[name] = answer;
+      return Rx4.Observable.while(function() {
+        // NOTE: the line below does the comparison before incrementing promptIndex.
+        return promptIndex++ <= finalPromptIndex;
+      }, inquirerSource.take(1)).reduce(function(
+        accumulator,
+        response
+      ): AskOutput<T> {
+        const name = response.name;
+        const answer = response.answer;
+        const answers = accumulator.answers;
+        answers[name] = answer;
 
-          // If the next prompt is skipped due to inquirer's
-          // "when" option, we need to take one fewer.
-          //
-          // NOTE: "promptIndex" here corresponds to the
-          // promptIndex for the next time we are to enter
-          // the "while" block above.
-          const nextPrompt = promptSet[promptIndex];
-          if (nextPrompt) {
-            const nextWhen = nextPrompt.when;
-            if (nextWhen && !nextWhen(answers)) {
-              // decrement so as to take one fewer.
-              finalPromptIndex -= 1;
-            }
+        // If the next prompt is skipped due to inquirer's
+        // "when" option, we need to take one fewer.
+        //
+        // NOTE: "promptIndex" here corresponds to the
+        // promptIndex for the next time we are to enter
+        // the "while" block above.
+        const nextPrompt = promptSet[promptIndex];
+        if (nextPrompt) {
+          const nextWhen = nextPrompt.when;
+          if (nextWhen && !nextWhen(answers)) {
+            // decrement so as to take one fewer.
+            finalPromptIndex -= 1;
           }
+        }
 
-          accumulator.answers = answers;
-          return accumulator;
-        }, starter);
+        accumulator.answers = answers;
+        return accumulator;
+      },
+      starter);
     })
     .doOnError(function(err) {
       err.message = (err.message || "") + " (observed in rx-extra ask)";
@@ -147,7 +149,9 @@ export function askStatic<T>(
 }
 
 declare module "rxjs/Observable" {
-  namespace Observable { export let ask: typeof askStatic; }
+  namespace Observable {
+    export let ask: typeof askStatic;
+  }
 }
 
 Observable.ask = askStatic;
