@@ -1568,7 +1568,7 @@ describe("Public API", function() {
               }
               setTimeout(function() {
                 next();
-              }, maxDelay / x);
+              }, maxDelay / Math.max(1, x));
             }
           });
         });
@@ -1673,7 +1673,7 @@ describe("Public API", function() {
                   push(null, x);
                 }
                 next();
-              }, maxDelay / x);
+              }, maxDelay / Math.max(1, x));
             }
           });
         });
@@ -1811,7 +1811,7 @@ describe("Public API", function() {
               function() {
                 this.resume();
               }.bind(this),
-              x / maxDelay
+              maxDelay / Math.max(1, x)
             );
           },
           function() {
@@ -1920,7 +1920,7 @@ describe("Public API", function() {
           }
           setTimeout(function() {
             callback();
-          }, maxDelay / x);
+          }, maxDelay / Math.max(1, x));
         });
 
         source
@@ -1970,7 +1970,7 @@ describe("Public API", function() {
               that.push(x);
             }
             callback();
-          }, maxDelay / x);
+          }, maxDelay / Math.max(1, x));
         });
 
         source

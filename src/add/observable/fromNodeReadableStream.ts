@@ -1,7 +1,9 @@
-// for related code and discussion, see
-// https://github.com/Reactive-Extensions/rx-node/pull/16
-// and
-// https://github.com/HackerHappyHour/rxjs-node/blob/master/lib/fromReadStream.js
+/********************************************************
+ * for related code and discussion, see
+ * https://github.com/Reactive-Extensions/rx-node/pull/16
+ * and
+ * https://github.com/HackerHappyHour/rxjs-node/blob/master/lib/fromReadStream.js
+ ********************************************************/
 
 import { Observable } from "rxjs/Observable";
 import "rxjs/add/operator/publish";
