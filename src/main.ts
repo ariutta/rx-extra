@@ -1,3 +1,4 @@
+import "source-map-support/register";
 import * as Rx from "rxjs/Rx";
 
 import "./add/observable/ask";

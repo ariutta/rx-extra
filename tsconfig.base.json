@@ -1,8 +1,10 @@
 {
   "compilerOptions": {
     "declaration": true,
+    "declarationMap": true,
     "experimentalDecorators": true,
     "inlineSourceMap": true,
+    "inlineSources": true,
     "jsx": "react",
     "moduleResolution": "node",
     "noEmitOnError": true,
@@ -14,7 +16,6 @@
     "src/**/*"
   ],
   "exclude": [
-    "dist/**/*",
     "tmp/**/*"
   ]
 }
