@@ -74,7 +74,7 @@
     "chai": "^3.5.0",
     "csv-streamify": "^3.0.4",
     "highland": "^2.13.5",
-    "mocha": "^6.2.2",
+    "mocha": "^10.2.0",
     "npm-run-all": "^4.1.5",
     "npm-watch": "^0.6.0",
     "sinon": "^7.5.0",
